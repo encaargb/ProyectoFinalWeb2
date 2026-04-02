@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: Sports Facilities API
+  version: 1.0.0
+  description: >
+    API REST para consultar instalaciones deportivas, deportes y
+    registros meteorológicos asociados.
+
+servers:
+  - url: http://localhost:3000
+paths:
+  /:
+    get:
+      summary: Check API status
+      responses:
+        '200':
+          description: API running correctly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Sports Facilities API is running
