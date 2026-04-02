@@ -1,0 +1,21 @@
+{
+  "name": "proyectofinalweb2",
+  "version": "1.0.0",
+  "description": "- _Inés Del Río García_\r - _Encarnación Teresa González Buitrago_\r - _Jesús Joana Azuara_\r - _Lucía Sorní Scaletti_",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/encaargb/ProyectoFinalWeb2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/encaargb/ProyectoFinalWeb2/issues"
+  },
+  "homepage": "https://github.com/encaargb/ProyectoFinalWeb2#readme"
+}
