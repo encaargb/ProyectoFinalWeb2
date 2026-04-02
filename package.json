@@ -4,7 +4,12 @@
   "description": "- _Inés Del Río García_\r - _Encarnación Teresa González Buitrago_\r - _Jesús Joana Azuara_\r - _Lucía Sorní Scaletti_",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "repository": {
     "type": "git",
@@ -17,5 +22,14 @@
   "bugs": {
     "url": "https://github.com/encaargb/ProyectoFinalWeb2/issues"
   },
-  "homepage": "https://github.com/encaargb/ProyectoFinalWeb2#readme"
+  "homepage": "https://github.com/encaargb/ProyectoFinalWeb2#readme",
+  "dependencies": {
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
+  }
 }
