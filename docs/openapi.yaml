@@ -23,3 +23,37 @@ paths:
                   message:
                     type: string
                     example: Sports Facilities API is running
+
+  /installations:
+    get:
+      summary: Get all installations
+      description: Returns a list of sports installations
+      responses:
+        '200':
+          description: List of installations returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Installation'
+components:
+  schemas:
+    Installation:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1"
+        name:
+          type: string
+          example: Polideportivo Municipal
+        type:
+          type: string
+          example: polideportivo
+        city:
+          type: string
+          example: Madrid
