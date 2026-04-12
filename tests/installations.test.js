@@ -4,7 +4,9 @@ const app = require('../src/app');
 jest.mock('../src/models/installation.model', () => ({
     find: jest.fn(),
     findById: jest.fn(),
-    create: jest.fn()
+    create: jest.fn(),
+    findByIdAndUpdate: jest.fn(),
+    findByIdAndDelete: jest.fn()
 }));
 
 const Installation = require('../src/models/installation.model');
@@ -89,4 +91,92 @@ describe('POST /installations', () => {
     });
 
 });
+
+describe('PUT /installations/:id', () => {
+
+    test('should update an existing installation', async () => {
+        const updatedInstallation = {
+            name: 'Centro Deportivo Actualizado',
+            type: 'gym',
+            city: 'Barcelona'
+        };
+
+        Installation.findByIdAndUpdate.mockResolvedValue({
+            id: '1',
+            ...updatedInstallation
+        });
+
+        const res = await request(app)
+            .put('/installations/1')
+            .send(updatedInstallation);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toHaveProperty('data');
+        expect(res.body.data).toHaveProperty('name', 'Centro Deportivo Actualizado');
+        expect(res.body.data).toHaveProperty('city', 'Barcelona');
+    });
+
+    test('should return 400 if required fields are missing', async () => {
+        const res = await request(app)
+            .put('/installations/1')
+            .send({});
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body).toEqual({
+            status: 400,
+            message: 'Missing required fields'
+        });
+    });
+
+    test('should return 404 if installation does not exist', async () => {
+        Installation.findByIdAndUpdate.mockResolvedValue(null);
+
+        const res = await request(app)
+            .put('/installations/999')
+            .send({
+                name: 'Centro Deportivo',
+                type: 'gym',
+                city: 'Madrid'
+            });
+
+        expect(res.statusCode).toBe(404);
+        expect(res.body).toEqual({
+            status: 404,
+            message: 'Installation not found'
+        });
+    });
+});
+
+describe('DELETE /installations/:id', () => {
+
+    test('should delete an existing installation', async () => {
+        Installation.findByIdAndDelete.mockResolvedValue({
+            id: '1',
+            name: 'Test',
+            type: 'gym',
+            city: 'Madrid'
+        });
+
+        const res = await request(app).delete('/installations/1');
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({
+            message: 'Installation deleted successfully'
+        });
+    });
+
+    test('should return 404 if installation does not exist', async () => {
+        Installation.findByIdAndDelete.mockResolvedValue(null);
+
+        const res = await request(app).delete('/installations/999');
+
+        expect(res.statusCode).toBe(404);
+        expect(res.body).toEqual({
+            status: 404,
+            message: 'Installation not found'
+        });
+    });
+
+});
+
 
