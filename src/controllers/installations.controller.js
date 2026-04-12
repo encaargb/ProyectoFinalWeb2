@@ -21,7 +21,27 @@ const getInstallationById = async (req, res) => {
     res.status(200).json({ data: installation });
 };
 
+const createInstallation = async (req, res) => {
+    const { name, type, city } = req.body;
+
+    if (!name || !type || !city) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Missing required fields'
+        });
+    }
+
+    const installation = await Installation.create({
+        name,
+        type,
+        city
+    });
+
+    res.status(201).json({ data: installation });
+};
+
 module.exports = {
     getAllInstallations,
-    getInstallationById
+    getInstallationById,
+    createInstallation
 };

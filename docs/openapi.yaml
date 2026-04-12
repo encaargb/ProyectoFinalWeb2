@@ -40,6 +40,31 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Installation'
+    post:
+      summary: Create a new installation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Installation'
+      responses:
+        '201':
+          description: Installation created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Installation'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /installations/{id}:
     get:
       summary: Get installation by id
