@@ -1,26 +1,15 @@
-const installations = [
-    {
-        id: '1',
-        name: 'Polideportivo Municipal',
-        type: 'polideportivo',
-        city: 'Madrid'
-    },
-    {
-        id: '2',
-        name: 'Centro Deportivo Norte',
-        type: 'gimnasio',
-        city: 'Alcobendas'
-    }
-];
+const Installation = require('../models/installation.model');
 
-const getAllInstallations = (req, res) => {
+const getAllInstallations = async (req, res) => {
+    const installations = await Installation.find();
+
     res.status(200).json({ data: installations });
 };
 
-const getInstallationById = (req, res) => {
+const getInstallationById = async (req, res) => {
     const { id } = req.params;
 
-    const installation = installations.find((item) => item.id === id);
+    const installation = await Installation.findById(id);
 
     if (!installation) {
         return res.status(404).json({
@@ -29,7 +18,7 @@ const getInstallationById = (req, res) => {
         });
     }
 
-    return res.status(200).json({ data: installation });
+    res.status(200).json({ data: installation });
 };
 
 module.exports = {
