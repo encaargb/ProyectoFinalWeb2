@@ -40,6 +40,34 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Installation'
+  /installations/{id}:
+    get:
+      summary: Get installation by id
+      description: Returns a sports installation by its identifier
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Installation identifier
+      responses:
+        '200':
+          description: Installation returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Installation'
+        '404':
+          description: Installation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     Installation:
@@ -57,3 +85,12 @@ components:
         city:
           type: string
           example: Madrid
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: Installation not found
