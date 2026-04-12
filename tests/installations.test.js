@@ -10,34 +10,28 @@ jest.mock('../src/models/installation.model', () => ({
 }));
 
 const Installation = require('../src/models/installation.model');
+const mockFindChain = (result) => {
+    const limitMock = jest.fn().mockResolvedValue(result);
+    const skipMock = jest.fn(() => ({ limit: limitMock }));
+    Installation.find.mockReturnValue({ skip: skipMock });
 
+    return { skipMock, limitMock };
+};
 
 describe('GET /installations', () => {
     test('should return a list of installations', async () => {
-        Installation.find.mockResolvedValue([
+        mockFindChain([
             { id: '1', name: 'Test', type: 'gym', city: 'Madrid' }
         ]);
         const res = await request(app).get('/installations');
         expect(res.statusCode).toBe(200);
         expect(res.body).toHaveProperty('data');
-    });
-
-    test('should return filtered installations by type', async () => {
-        Installation.find.mockResolvedValue([
-            { id: '1', name: 'Gym Test', type: 'gym', city: 'Madrid' }
-        ]);
-
-        const res = await request(app).get('/installations?type=gym');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data.length).toBe(1);
-        expect(res.body.data[0]).toHaveProperty('type', 'gym');
-        expect(Installation.find).toHaveBeenCalledWith({ type: 'gym' });
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.length).toBeGreaterThan(0);
     });
 
     test('should return filtered installations by city', async () => {
-        Installation.find.mockResolvedValue([
+        mockFindChain([
             { id: '1', name: 'Test Madrid', type: 'gym', city: 'Madrid' }
         ]);
 
@@ -52,7 +46,7 @@ describe('GET /installations', () => {
     });
 
     test('should return filtered installations by type', async () => {
-        Installation.find.mockResolvedValue([
+        mockFindChain([
             { id: '1', name: 'Gym Test', type: 'gym', city: 'Madrid' }
         ]);
 
@@ -66,7 +60,7 @@ describe('GET /installations', () => {
     });
 
     test('should return filtered installations by sport', async () => {
-        Installation.find.mockResolvedValue([
+        mockFindChain([
             {
                 id: '1',
                 name: 'Polideportivo Madrid',
@@ -88,7 +82,7 @@ describe('GET /installations', () => {
     });
 
     test('should return filtered installations by city, type and sport', async () => {
-        Installation.find.mockResolvedValue([
+        mockFindChain([
             {
                 id: '1',
                 name: 'Polideportivo Madrid',
@@ -112,6 +106,63 @@ describe('GET /installations', () => {
             type: 'polideportivo',
             'sports.name': 'Baloncesto'
         });
+    });
+
+    test('should return paginated installations', async () => {
+        const mockInstallations = [
+            { id: '1', name: 'Installation 1', type: 'gym', city: 'Madrid' },
+            { id: '2', name: 'Installation 2', type: 'pool', city: 'Madrid' }
+        ];
+
+        const limitMock = jest.fn().mockResolvedValue(mockInstallations);
+        const skipMock = jest.fn(() => ({ limit: limitMock }));
+
+        Installation.find.mockReturnValue({ skip: skipMock });
+
+        const res = await request(app).get('/installations?page=1&limit=2');
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toHaveProperty('data');
+        expect(res.body.data.length).toBe(2);
+        expect(Installation.find).toHaveBeenCalledWith({});
+        expect(skipMock).toHaveBeenCalledWith(0);
+        expect(limitMock).toHaveBeenCalledWith(2);
+    });
+
+    test('should return filtered and paginated installations', async () => {
+        const mockInstallations = [
+            {
+                id: '1',
+                name: 'Polideportivo Madrid',
+                type: 'polideportivo',
+                city: 'Madrid',
+                sports: [
+                    { sportId: '507f1f77bcf86cd799439011', name: 'Baloncesto' }
+                ]
+            }
+        ];
+
+        const limitMock = jest.fn().mockResolvedValue(mockInstallations);
+        const skipMock = jest.fn(() => ({ limit: limitMock }));
+
+        Installation.find.mockReturnValue({ skip: skipMock });
+
+        const res = await request(app).get(
+            '/installations?city=Madrid&type=polideportivo&sport=Baloncesto&page=2&limit=1'
+        );
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toHaveProperty('data');
+        expect(res.body.data.length).toBe(1);
+
+        expect(Installation.find).toHaveBeenCalledWith({
+            city: 'Madrid',
+            type: 'polideportivo',
+            'sports.name': 'Baloncesto'
+        });
+
+        expect(skipMock).toHaveBeenCalledWith(1);
+        expect(limitMock).toHaveBeenCalledWith(1);
     });
 
 });

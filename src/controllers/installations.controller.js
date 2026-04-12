@@ -1,7 +1,8 @@
 const Installation = require('../models/installation.model');
 
 const getAllInstallations = async (req, res) => {
-    const { city, type, sport } = req.query;
+    const { city, type, sport, page = 1, limit = 10 } = req.query;
+
     const filter = {};
     if (city) {
         filter.city = city;
@@ -12,7 +13,14 @@ const getAllInstallations = async (req, res) => {
     if (sport) {
         filter['sports.name'] = sport;
     }
-    const installations = await Installation.find(filter);
+
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const installations = await Installation.find(filter)
+        .skip(skip)
+        .limit(limitNumber);
 
     res.status(200).json({ data: installations });
 };
