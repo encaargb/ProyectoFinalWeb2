@@ -1,4 +1,11 @@
 const request = require('supertest');
+
+// Mock de la base de datos para que no intente conectar durante el test de la app
+jest.mock('../src/config/db', () => ({
+    getDB: jest.fn(),
+    connectDB: jest.fn().mockResolvedValue({})
+}));
+
 const app = require('../src/app');
 
 describe('GET /', () => {

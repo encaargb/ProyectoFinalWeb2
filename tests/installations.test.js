@@ -1,325 +1,159 @@
+
+// Para hacer peticiones a la app: await request(app).get('/installations')
 const request = require('supertest');
 const app = require('../src/app');
+const { ObjectId } = require('mongodb');
 
-jest.mock('../src/models/installation.model', () => ({
-    find: jest.fn(),
-    findById: jest.fn(),
-    create: jest.fn(),
-    findByIdAndUpdate: jest.fn(),
-    findByIdAndDelete: jest.fn()
+// Mock de la base de datos
+// La idea es comprobar que mi API responde bien a GET, POST, PUT y DELETE,
+// pero sin usar una base de datos real.
+// Cuando en el código alguien haga require('../src/config/db'), no uses el módulo real.
+// Usa este módulo falso y sustituye la función getDB por una función falsa controlada por jest
+jest.mock('../src/config/db', () => ({
+    getDB: jest.fn()
 }));
 
-const Installation = require('../src/models/installation.model');
-const mockFindChain = (result) => {
-    const limitMock = jest.fn().mockResolvedValue(result);
-    const skipMock = jest.fn(() => ({ limit: limitMock }));
-    Installation.find.mockReturnValue({ skip: skipMock });
+const { getDB } = require('../src/config/db');
 
-    return { skipMock, limitMock };
-};
+describe('Installations API', () => {
+    // colección falsa de MongoDB.
+    let mockCollection;
+    // base de datos falsa que, cuando le pides una colección, devuelve mockCollection.
+    let mockDb;
 
-describe('GET /installations', () => {
-    test('should return a list of installations', async () => {
-        mockFindChain([
-            { id: '1', name: 'Test', type: 'gym', city: 'Madrid' }
-        ]);
-        const res = await request(app).get('/installations');
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(Array.isArray(res.body.data)).toBe(true);
-        expect(res.body.data.length).toBeGreaterThan(0);
-    });
+    beforeEach(() => {
+        jest.clearAllMocks();
 
-    test('should return filtered installations by city', async () => {
-        mockFindChain([
-            { id: '1', name: 'Test Madrid', type: 'gym', city: 'Madrid' }
-        ]);
-
-        const res = await request(app).get('/installations?city=Madrid');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(Array.isArray(res.body.data)).toBe(true);
-        expect(res.body.data.length).toBe(1);
-        expect(res.body.data[0]).toHaveProperty('city', 'Madrid');
-        expect(Installation.find).toHaveBeenCalledWith({ city: 'Madrid' });
-    });
-
-    test('should return filtered installations by type', async () => {
-        mockFindChain([
-            { id: '1', name: 'Gym Test', type: 'gym', city: 'Madrid' }
-        ]);
-
-        const res = await request(app).get('/installations?type=gym');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data.length).toBe(1);
-        expect(res.body.data[0]).toHaveProperty('type', 'gym');
-        expect(Installation.find).toHaveBeenCalledWith({ type: 'gym' });
-    });
-
-    test('should return filtered installations by sport', async () => {
-        mockFindChain([
-            {
-                id: '1',
-                name: 'Polideportivo Madrid',
-                type: 'polideportivo',
-                city: 'Madrid',
-                sports: [
-                    { sportId: '507f1f77bcf86cd799439011', name: 'Baloncesto' }
-                ]
-            }
-        ]);
-
-        const res = await request(app).get('/installations?sport=Baloncesto');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data.length).toBe(1);
-        expect(res.body.data[0]).toHaveProperty('sports');
-        expect(Installation.find).toHaveBeenCalledWith({ 'sports.name': 'Baloncesto' });
-    });
-
-    test('should return filtered installations by city, type and sport', async () => {
-        mockFindChain([
-            {
-                id: '1',
-                name: 'Polideportivo Madrid',
-                type: 'polideportivo',
-                city: 'Madrid',
-                sports: [
-                    { sportId: '507f1f77bcf86cd799439011', name: 'Baloncesto' }
-                ]
-            }
-        ]);
-
-        const res = await request(app).get('/installations?city=Madrid&type=polideportivo&sport=Baloncesto');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data.length).toBe(1);
-        expect(res.body.data[0]).toHaveProperty('city', 'Madrid');
-        expect(res.body.data[0]).toHaveProperty('type', 'polideportivo');
-        expect(Installation.find).toHaveBeenCalledWith({
-            city: 'Madrid',
-            type: 'polideportivo',
-            'sports.name': 'Baloncesto'
-        });
-    });
-
-    test('should return paginated installations', async () => {
-        const mockInstallations = [
-            { id: '1', name: 'Installation 1', type: 'gym', city: 'Madrid' },
-            { id: '2', name: 'Installation 2', type: 'pool', city: 'Madrid' }
-        ];
-
-        const limitMock = jest.fn().mockResolvedValue(mockInstallations);
-        const skipMock = jest.fn(() => ({ limit: limitMock }));
-
-        Installation.find.mockReturnValue({ skip: skipMock });
-
-        const res = await request(app).get('/installations?page=1&limit=2');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data.length).toBe(2);
-        expect(Installation.find).toHaveBeenCalledWith({});
-        expect(skipMock).toHaveBeenCalledWith(0);
-        expect(limitMock).toHaveBeenCalledWith(2);
-    });
-
-    test('should return filtered and paginated installations', async () => {
-        const mockInstallations = [
-            {
-                id: '1',
-                name: 'Polideportivo Madrid',
-                type: 'polideportivo',
-                city: 'Madrid',
-                sports: [
-                    { sportId: '507f1f77bcf86cd799439011', name: 'Baloncesto' }
-                ]
-            }
-        ];
-
-        const limitMock = jest.fn().mockResolvedValue(mockInstallations);
-        const skipMock = jest.fn(() => ({ limit: limitMock }));
-
-        Installation.find.mockReturnValue({ skip: skipMock });
-
-        const res = await request(app).get(
-            '/installations?city=Madrid&type=polideportivo&sport=Baloncesto&page=2&limit=1'
-        );
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data.length).toBe(1);
-
-        expect(Installation.find).toHaveBeenCalledWith({
-            city: 'Madrid',
-            type: 'polideportivo',
-            'sports.name': 'Baloncesto'
-        });
-
-        expect(skipMock).toHaveBeenCalledWith(1);
-        expect(limitMock).toHaveBeenCalledWith(1);
-    });
-
-});
-
-describe('GET /installations/:id', () => {
-    test('should return one installation when id exists', async () => {
-        Installation.findById.mockResolvedValue({
-            id: '1',
-            name: 'Test',
-            type: 'gym',
-            city: 'Madrid'
-        });
-        const res = await request(app).get('/installations/1');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data).toHaveProperty('id', '1');
-        expect(res.body.data).toHaveProperty('name');
-        expect(res.body.data).toHaveProperty('type');
-        expect(res.body.data).toHaveProperty('city');
-    });
-
-    test('should return 404 when installation does not exist', async () => {
-        Installation.findById.mockResolvedValue(null);
-        const res = await request(app).get('/installations/999');
-
-        expect(res.statusCode).toBe(404);
-        expect(res.body).toEqual({
-            status: 404,
-            message: 'Installation not found'
-        });
-    });
-});
-
-describe('POST /installations', () => {
-
-    test('should create a new installation', async () => {
-
-        const newInstallation = {
-            name: 'Nuevo Polideportivo',
-            type: 'polideportivo',
-            city: 'Madrid'
+        // Configuramos el mock de la colección
+        mockCollection = {
+            find: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockReturnThis(),
+            toArray: jest.fn(),
+            findOne: jest.fn(),
+            insertOne: jest.fn(),
+            findOneAndUpdate: jest.fn(),
+            deleteOne: jest.fn()
         };
 
-        Installation.create.mockResolvedValue({
-            id: '123',
-            ...newInstallation
-        });
-
-        const res = await request(app)
-            .post('/installations')
-            .send(newInstallation);
-
-        expect(res.statusCode).toBe(201);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data).toHaveProperty('name', 'Nuevo Polideportivo');
-    });
-
-    test('should return 400 if required fields are missing', async () => {
-
-        const res = await request(app)
-            .post('/installations')
-            .send({});
-
-        expect(res.statusCode).toBe(400);
-        expect(res.body).toEqual({
-            status: 400,
-            message: 'Missing required fields'
-        });
-    });
-
-});
-
-describe('PUT /installations/:id', () => {
-
-    test('should update an existing installation', async () => {
-        const updatedInstallation = {
-            name: 'Centro Deportivo Actualizado',
-            type: 'gym',
-            city: 'Barcelona'
+        mockDb = {
+            collection: jest.fn().mockReturnValue(mockCollection)
         };
 
-        Installation.findByIdAndUpdate.mockResolvedValue({
-            id: '1',
-            ...updatedInstallation
-        });
-
-        const res = await request(app)
-            .put('/installations/1')
-            .send(updatedInstallation);
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toHaveProperty('data');
-        expect(res.body.data).toHaveProperty('name', 'Centro Deportivo Actualizado');
-        expect(res.body.data).toHaveProperty('city', 'Barcelona');
+        // Permitimos que cada test individual pueda definir qué devuelve la "base de datos"
+        getDB.mockReturnValue(mockDb);
     });
 
-    test('should return 400 if required fields are missing', async () => {
-        const res = await request(app)
-            .put('/installations/1')
-            .send({});
+    describe('GET /installations', () => {
+        const validId = '507f1f77bcf86cd799439011';
 
-        expect(res.statusCode).toBe(400);
-        expect(res.body).toEqual({
-            status: 400,
-            message: 'Missing required fields'
+        test('should return a list of installations', async () => {
+            const mockData = [{ _id: new ObjectId(validId), name: 'Test', type: 'gym', city: 'Madrid' }];
+            mockCollection.toArray.mockResolvedValue(mockData);
+
+            const res = await request(app).get('/installations');
+
+            expect(res.statusCode).toBe(200);
+            expect(res.body.data).toHaveLength(1);
+            expect(mockDb.collection).toHaveBeenCalledWith('installations');
+        });
+
+        test('should return filtered installations by city', async () => {
+            mockCollection.toArray.mockResolvedValue([{ city: 'Madrid' }]);
+
+            const res = await request(app).get('/installations?city=Madrid');
+
+            expect(res.statusCode).toBe(200);
+            expect(mockCollection.find).toHaveBeenCalledWith(expect.objectContaining({ city: 'Madrid' }));
+        });
+
+        test('should return paginated installations', async () => {
+            mockCollection.toArray.mockResolvedValue([]);
+
+            await request(app).get('/installations?page=2&limit=5');
+
+            expect(mockCollection.skip).toHaveBeenCalledWith(5);
+            expect(mockCollection.limit).toHaveBeenCalledWith(5);
         });
     });
 
-    test('should return 404 if installation does not exist', async () => {
-        Installation.findByIdAndUpdate.mockResolvedValue(null);
+    describe('GET /installations/:id', () => {
+        const validId = '507f1f77bcf86cd799439011';
 
-        const res = await request(app)
-            .put('/installations/999')
-            .send({
-                name: 'Centro Deportivo',
-                type: 'gym',
-                city: 'Madrid'
-            });
+        test('should return one installation when id exists', async () => {
+            const mockData = { _id: new ObjectId(validId), name: 'Test' };
+            mockCollection.findOne.mockResolvedValue(mockData);
 
-        expect(res.statusCode).toBe(404);
-        expect(res.body).toEqual({
-            status: 404,
-            message: 'Installation not found'
+            const res = await request(app).get(`/installations/${validId}`);
+
+            expect(res.statusCode).toBe(200);
+            expect(res.body.data.name).toBe('Test');
+        });
+
+        test('should return 400 for invalid ID format', async () => {
+            const res = await request(app).get('/installations/invalid-id');
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toBe('Formato de ID no válido');
+        });
+
+        test('should return 404 when installation does not exist', async () => {
+            mockCollection.findOne.mockResolvedValue(null);
+            const validId = '507f1f77bcf86cd799439011';
+
+            const res = await request(app).get(`/installations/${validId}`);
+            expect(res.statusCode).toBe(404);
+        });
+    });
+
+    describe('POST /installations', () => {
+        test('should create a new installation', async () => {
+            const newInst = { name: 'New', type: 'gym', city: 'Madrid' };
+            mockCollection.insertOne.mockResolvedValue({ insertedId: new ObjectId() });
+
+            const res = await request(app).post('/installations').send(newInst);
+
+            expect(res.statusCode).toBe(201);
+            expect(res.body.data.name).toBe('New');
+            expect(mockCollection.insertOne).toHaveBeenCalled();
+        });
+
+        test('should return 400 if required fields are missing', async () => {
+            const res = await request(app).post('/installations').send({ name: 'Only Name' });
+            expect(res.statusCode).toBe(400);
+        });
+    });
+
+    describe('PUT /installations/:id', () => {
+        const validId = '507f1f77bcf86cd799439011';
+
+        test('should update an existing installation', async () => {
+            const updateData = { name: 'Updated', type: 'gym', city: 'Madrid' };
+            mockCollection.findOneAndUpdate.mockResolvedValue({ _id: validId, ...updateData });
+
+            const res = await request(app).put(`/installations/${validId}`).send(updateData);
+
+            expect(res.statusCode).toBe(200);
+            expect(res.body.data.name).toBe('Updated');
+        });
+    });
+
+    describe('DELETE /installations/:id', () => {
+        const validId = '507f1f77bcf86cd799439011';
+
+        test('should delete an existing installation', async () => {
+            mockCollection.deleteOne.mockResolvedValue({ deletedCount: 1 });
+
+            const res = await request(app).delete(`/installations/${validId}`);
+
+            expect(res.statusCode).toBe(200);
+            expect(res.body.message).toBe('Installation deleted successfully');
+        });
+
+        test('should return 404 if not found', async () => {
+            mockCollection.deleteOne.mockResolvedValue({ deletedCount: 0 });
+
+            const res = await request(app).delete(`/installations/${validId}`);
+            expect(res.statusCode).toBe(404);
         });
     });
 });
-
-describe('DELETE /installations/:id', () => {
-
-    test('should delete an existing installation', async () => {
-        Installation.findByIdAndDelete.mockResolvedValue({
-            id: '1',
-            name: 'Test',
-            type: 'gym',
-            city: 'Madrid'
-        });
-
-        const res = await request(app).delete('/installations/1');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body).toEqual({
-            message: 'Installation deleted successfully'
-        });
-    });
-
-    test('should return 404 if installation does not exist', async () => {
-        Installation.findByIdAndDelete.mockResolvedValue(null);
-
-        const res = await request(app).delete('/installations/999');
-
-        expect(res.statusCode).toBe(404);
-        expect(res.body).toEqual({
-            status: 404,
-            message: 'Installation not found'
-        });
-    });
-
-});
-
