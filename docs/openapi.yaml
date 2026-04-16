@@ -8,6 +8,7 @@ info:
 
 servers:
   - url: http://localhost:3000
+
 paths:
   /:
     get:
@@ -28,6 +29,44 @@ paths:
     get:
       summary: Get all installations
       description: Returns a list of sports installations
+      parameters:
+        - in: query
+          name: city
+          required: false
+          schema:
+            type: string
+          description: Filter installations by city
+
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+          description: Filter installations by type
+
+        - in: query
+          name: sport
+          required: false
+          schema:
+            type: string
+          description: Filter installations by sport name
+
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            example: 1
+          description: Page number for pagination
+
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            example: 10
+          description: Number of results per page
+
       responses:
         '200':
           description: List of installations returned successfully
@@ -40,6 +79,7 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Installation'
+
     post:
       summary: Create a new installation
       requestBody:
@@ -47,7 +87,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Installation'
+              $ref: '#/components/schemas/InstallationInput'
       responses:
         '201':
           description: Installation created successfully
@@ -93,8 +133,97 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+    put:
+      summary: Update installation by id
+      description: Updates an existing sports installation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Installation identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstallationInput'
+      responses:
+        '200':
+          description: Installation updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Installation'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Installation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete installation by id
+      description: Deletes an existing sports installation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Installation identifier
+      responses:
+        '200':
+          description: Installation deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Installation deleted successfully
+        '404':
+          description: Installation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
+    SportReference:
+      type: object
+      properties:
+        sportId:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        name:
+          type: string
+          example: Baloncesto
+
+    GeoPoint:
+      type: object
+      properties:
+        type:
+          type: string
+          example: Point
+        coordinates:
+          type: array
+          items:
+            type: number
+          example: [-3.7, 40.4]
+
     Installation:
       type: object
       properties:
@@ -110,6 +239,56 @@ components:
         city:
           type: string
           example: Madrid
+        sports:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportReference'
+        location:
+          $ref: '#/components/schemas/GeoPoint'
+        externalId:
+          type: string
+          example: osm_123
+        source:
+          type: string
+          example: OpenStreetMap
+        lastUpdated:
+          type: string
+          format: date
+          example: 2026-03-24
+
+    InstallationInput:
+      type: object
+      required:
+        - name
+        - type
+        - city
+      properties:
+        name:
+          type: string
+          example: Polideportivo Municipal
+        type:
+          type: string
+          example: polideportivo
+        city:
+          type: string
+          example: Madrid
+        sports:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportReference'
+        location:
+          $ref: '#/components/schemas/GeoPoint'
+        externalId:
+          type: string
+          example: osm_123
+        source:
+          type: string
+          example: OpenStreetMap
+        lastUpdated:
+          type: string
+          format: date
+          example: 2026-03-24
+
     ErrorResponse:
       type: object
       properties:
