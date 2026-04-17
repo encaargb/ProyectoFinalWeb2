@@ -108,7 +108,7 @@ paths:
   /installations/{id}:
     get:
       summary: Get installation by id
-      description: Returns a sports installation by its identifier
+      description: Returns a sports installation by its identifier. Supports XML if requested via Accept header.
       parameters:
         - in: path
           name: id
@@ -126,6 +126,15 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Installation'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Installation'
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Installation not found
           content:
@@ -160,7 +169,7 @@ paths:
                   data:
                     $ref: '#/components/schemas/Installation'
         '400':
-          description: Missing required fields
+          description: Missing required fields or invalid ID
           content:
             application/json:
               schema:
@@ -190,15 +199,37 @@ paths:
               schema:
                 type: object
                 properties:
+                  status:
+                    type: integer
+                    example: 200
                   message:
                     type: string
                     example: Installation deleted successfully
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Installation not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /sports:
+    get:
+      summary: Get all sports (Not implemented yet)
+      responses:
+        '200':
+          description: List of sports
+  /weather-records:
+    get:
+      summary: Get all weather records (Not implemented yet)
+      responses:
+        '200':
+          description: List of weather records
 
 components:
   schemas:
@@ -229,7 +260,7 @@ components:
       properties:
         id:
           type: string
-          example: "1"
+          example: "67926b0a8863f61b0c000001"
         name:
           type: string
           example: Polideportivo Municipal
@@ -253,8 +284,8 @@ components:
           example: OpenStreetMap
         lastUpdated:
           type: string
-          format: date
-          example: 2026-03-24
+          format: date-time
+          example: "2024-03-24T12:00:00Z"
 
     InstallationInput:
       type: object
@@ -286,8 +317,8 @@ components:
           example: OpenStreetMap
         lastUpdated:
           type: string
-          format: date
-          example: 2026-03-24
+          format: date-time
+          example: "2024-03-24T12:00:00Z"
 
     ErrorResponse:
       type: object

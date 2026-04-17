@@ -1,22 +1,12 @@
-/*
-Este archivo recibe la petición HTTP (req) y construye la respuesta (res).
-
-Su trabajo es:
-
-    leer parámetros y body
-    validar datos
-    decidir qué código HTTP devolver
-    llamar al repositorio
-    transformar un poco la respuesta si hace falta
-
-O sea: no accede directamente a MongoDB.
-Se apoya en installationRepository para eso
-*/
-
 const installationRepository = require('../repositories/installation.repository');
 const { ObjectId } = require('mongodb');
-// const osmService = require('../services/osm.service');
-// const { toXML } = require('jstoxml'); // Necesitas: npm install jstoxml
+const { toXML } = require('jstoxml');
+
+const mapInstallation = (inst) => {
+    if (!inst) return null;
+    const { _id, ...rest } = inst;
+    return { id: _id.toString(), ...rest };
+};
 
 const getAllInstallations = async (req, res) => {
     try {
@@ -32,10 +22,11 @@ const getAllInstallations = async (req, res) => {
         const skip = (pageNumber - 1) * limitNumber;
 
         const installations = await installationRepository.findAll(filter, skip, limitNumber);
+        const mappedData = installations.map(mapInstallation);
 
-        res.status(200).json({ data: installations });
+        res.status(200).json({ data: mappedData });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ status: 500, message: error.message });
     }
 };
 
@@ -44,21 +35,33 @@ const getInstallationById = async (req, res) => {
         const { id } = req.params;
 
         if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ message: 'Formato de ID no válido' });
+            return res.status(400).json({ status: 400, message: 'Formato de ID no válido' });
         }
 
         const installation = await installationRepository.findById(id);
 
         if (!installation) {
-            return res.status(404).json({ message: 'Instalación no encontrada' });
+            return res.status(404).json({ status: 404, message: 'Instalación no encontrada' });
         }
 
+        const mappedData = mapInstallation(installation);
+
         // SOPORTE XML (Punto 6.1 de la práctica)
+        const acceptHeader = req.get('Accept');
+        if (acceptHeader && acceptHeader.includes('application/xml')) {
+            const xmlOptions = {
+                header: true,
+                indent: '  '
+            };
+            const xmlContent = toXML({ installation: mappedData }, xmlOptions);
+            res.set('Content-Type', 'application/xml');
+            return res.status(200).send(xmlContent);
+        }
 
         // Respuesta por defecto JSON
-        res.status(200).json({ data: installation });
+        res.status(200).json({ data: mappedData });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ status: 500, message: error.message });
     }
 };
 
@@ -74,7 +77,6 @@ const createInstallation = async (req, res) => {
             source
         } = req.body;
 
-        // 1. Validación estricta según especificación
         if (!name || !type || !city) {
             return res.status(400).json({
                 status: 400,
@@ -82,7 +84,6 @@ const createInstallation = async (req, res) => {
             });
         }
 
-        // 2. Estructura base del documento
         const newInstallation = {
             name,
             type,
@@ -94,14 +95,10 @@ const createInstallation = async (req, res) => {
             lastUpdated: new Date()
         };
 
-        // 3. ENRIQUECIMIENTO: Si no hay coordenadas, llamar a OSM (Punto 4 de la práctica)
-
-        // 4. Guardar en MongoDB Nativo
         const result = await installationRepository.create(newInstallation);
-
-        res.status(201).json({ data: result });
+        res.status(201).json({ data: mapInstallation(result) });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ status: 500, message: error.message });
     }
 };
 
@@ -120,7 +117,7 @@ const updateInstallation = async (req, res) => {
         } = req.body;
 
         if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ message: 'Invalid ID format' });
+            return res.status(400).json({ status: 400, message: 'Invalid ID format' });
         }
 
         if (!name || !type || !city) {
@@ -150,9 +147,9 @@ const updateInstallation = async (req, res) => {
             });
         }
 
-        res.status(200).json({ data: updatedInstallation });
+        res.status(200).json({ data: mapInstallation(updatedInstallation) });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ status: 500, message: error.message });
     }
 };
 
@@ -161,7 +158,7 @@ const deleteInstallation = async (req, res) => {
         const { id } = req.params;
 
         if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ message: 'Invalid ID format' });
+            return res.status(400).json({ status: 400, message: 'Invalid ID format' });
         }
 
         const deleted = await installationRepository.remove(id);
@@ -174,10 +171,11 @@ const deleteInstallation = async (req, res) => {
         }
 
         res.status(200).json({
+            status: 200,
             message: 'Installation deleted successfully'
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ status: 500, message: error.message });
     }
 };
 
