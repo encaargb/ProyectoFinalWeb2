@@ -3,8 +3,8 @@ info:
   title: Sports Facilities API
   version: 1.0.0
   description: >
-    API REST para consultar instalaciones deportivas, deportes y
-    registros meteorológicos asociados.
+    API REST para gestionar instalaciones deportivas. Actualmente el
+    recurso plenamente operativo es /installations.
 
 servers:
   - url: http://localhost:3000
@@ -27,61 +27,66 @@ paths:
 
   /installations:
     get:
-      summary: Get all installations
-      description: Returns a list of sports installations
+      summary: Obtener instalaciones
+      description: Devuelve instalaciones con filtros opcionales y paginación.
       parameters:
         - in: query
           name: city
           required: false
           schema:
             type: string
-          description: Filter installations by city
+          description: Filtra por ciudad. Debe ser un texto no vacío.
 
         - in: query
           name: type
           required: false
           schema:
             type: string
-          description: Filter installations by type
+          description: Filtra por tipo. Debe ser un texto no vacío.
 
         - in: query
           name: sport
           required: false
           schema:
             type: string
-          description: Filter installations by sport name
+          description: Filtra por nombre del deporte. Debe ser un texto no vacío.
 
         - in: query
           name: page
           required: false
           schema:
             type: integer
+            minimum: 1
             example: 1
-          description: Page number for pagination
+          description: Número de página. Debe ser un entero mayor que 0.
 
         - in: query
           name: limit
           required: false
           schema:
             type: integer
+            minimum: 1
+            maximum: 100
             example: 10
-          description: Number of results per page
+          description: Número de resultados por página. Debe estar entre 1 y 100.
 
       responses:
         '200':
-          description: List of installations returned successfully
+          description: Lista de instalaciones obtenida correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Installation'
+                $ref: '#/components/schemas/InstallationsListResponse'
+        '400':
+          description: Filtros o paginación no válidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     post:
-      summary: Create a new installation
+      summary: Crear instalación
+      description: Crea una instalación validando el cuerpo JSON antes de guardarlo.
       requestBody:
         required: true
         content:
@@ -90,7 +95,7 @@ paths:
               $ref: '#/components/schemas/InstallationInput'
       responses:
         '201':
-          description: Installation created successfully
+          description: Instalación creada correctamente
           content:
             application/json:
               schema:
@@ -99,7 +104,7 @@ paths:
                   data:
                     $ref: '#/components/schemas/Installation'
         '400':
-          description: Missing required fields
+          description: JSON inválido o faltan campos obligatorios
           content:
             application/json:
               schema:
@@ -107,18 +112,20 @@ paths:
 
   /installations/{id}:
     get:
-      summary: Get installation by id
-      description: Returns a sports installation by its identifier. Supports XML if requested via Accept header.
+      summary: Obtener instalación por id
+      description: >
+        Devuelve una instalación por su identificador. Si el cliente envía
+        Accept: application/xml, la respuesta se serializa a XML.
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: Installation identifier
+          description: Identificador MongoDB de la instalación
       responses:
         '200':
-          description: Installation returned successfully
+          description: Instalación obtenida correctamente
           content:
             application/json:
               schema:
@@ -130,28 +137,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/Installation'
         '400':
-          description: Invalid ID format
+          description: Formato de ID no válido
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Installation not found
+          description: Instalación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: La instalación existe pero no puede exportarse a XML por no cumplir el contrato mínimo
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
     put:
-      summary: Update installation by id
-      description: Updates an existing sports installation
+      summary: Actualizar instalación por id
+      description: Actualiza una instalación existente. Este endpoint exige el documento completo.
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: Installation identifier
+          description: Identificador MongoDB de la instalación
       requestBody:
         required: true
         content:
@@ -160,7 +173,7 @@ paths:
               $ref: '#/components/schemas/InstallationInput'
       responses:
         '200':
-          description: Installation updated successfully
+          description: Instalación actualizada correctamente
           content:
             application/json:
               schema:
@@ -169,50 +182,43 @@ paths:
                   data:
                     $ref: '#/components/schemas/Installation'
         '400':
-          description: Missing required fields or invalid ID
+          description: JSON inválido, faltan campos obligatorios o el ID no es válido
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Installation not found
+          description: Instalación no encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
     delete:
-      summary: Delete installation by id
-      description: Deletes an existing sports installation
+      summary: Eliminar instalación por id
+      description: Elimina una instalación existente.
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: Installation identifier
+          description: Identificador MongoDB de la instalación
       responses:
         '200':
-          description: Installation deleted successfully
+          description: Instalación eliminada correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: integer
-                    example: 200
-                  message:
-                    type: string
-                    example: Installation deleted successfully
+                $ref: '#/components/schemas/DeleteResponse'
         '400':
-          description: Invalid ID format
+          description: Formato de ID no válido
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Installation not found
+          description: Instalación no encontrada
           content:
             application/json:
               schema:
@@ -235,6 +241,8 @@ components:
   schemas:
     SportReference:
       type: object
+      required:
+        - name
       properties:
         sportId:
           type: string
@@ -245,12 +253,17 @@ components:
 
     GeoPoint:
       type: object
+      required:
+        - type
+        - coordinates
       properties:
         type:
           type: string
           example: Point
         coordinates:
           type: array
+          minItems: 2
+          maxItems: 2
           items:
             type: number
           example: [-3.7, 40.4]
@@ -283,6 +296,14 @@ components:
           type: string
           example: OpenStreetMap
         lastUpdated:
+          type: string
+          format: date-time
+          example: "2024-03-24T12:00:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-03-24T12:00:00Z"
+        updatedAt:
           type: string
           format: date-time
           example: "2024-03-24T12:00:00Z"
@@ -320,6 +341,36 @@ components:
           format: date-time
           example: "2024-03-24T12:00:00Z"
 
+    InstallationsListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Installation'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+
+    DeleteResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Instalación eliminada correctamente
+
     ErrorResponse:
       type: object
       properties:
@@ -328,4 +379,4 @@ components:
           example: 404
         message:
           type: string
-          example: Installation not found
+          example: Instalación no encontrada

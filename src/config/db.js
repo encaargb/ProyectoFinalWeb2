@@ -3,13 +3,14 @@ const { MongoClient } = require('mongodb');
 let client;
 let db;
 
-async function connectDB(testDbName = null) { // Añadimos testDbName como parámetro opcional
+// Esta función abre la conexión una sola vez y reutiliza la misma base de datos
+// mientras la aplicación siga viva.
+async function connectDB(testDbName = null) {
     if (db) {
         return db;
     }
 
     const uri = process.env.MONGODB_URI;
-    // Usamos testDbName si se proporciona, de lo contrario, usamos la variable de entorno
     const dbName = testDbName || process.env.MONGODB_DB_NAME;
 
     if (!uri) {
@@ -26,22 +27,20 @@ async function connectDB(testDbName = null) { // Añadimos testDbName como pará
     return db;
 }
 
+// Los repositorios usan esta función para pedir la conexión ya abierta.
 function getDB() {
     if (!db) {
-        // En un entorno de producción, esto podría ser un error.
-        // Para tests, el mock de la DB se encarga de esto.
-        // Aquí, si no hay conexión, devolvemos null o lanzamos un error si es crítico.
-        // Por ahora, mantenemos el comportamiento para no romper los mocks unitarios.
-        return null; // Cambiado de 'return db;' a 'return null;' para mayor claridad si no está conectada.
+        return null;
     }
     return db;
 }
 
+// Cerrar la conexión es importante en tests y al apagar la aplicación.
 async function closeDB() {
     if (client) {
         await client.close();
-        db = null; // Resetear la DB para futuras conexiones
-        client = null; // Resetear el cliente
+        db = null;
+        client = null;
         console.log('MongoDB desconectada');
     }
 }

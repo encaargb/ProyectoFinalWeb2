@@ -12,9 +12,19 @@ Su trabajo es:
 const { getDB } = require('../config/db');
 const { ObjectId } = require('mongodb');
 
-const getCollection = () => getDB().collection('installations');
+// Todas las operaciones pasan por la misma colección.
+const getCollection = () => {
+    const db = getDB();
+
+    if (!db) {
+        throw new Error('La conexión con MongoDB no está inicializada');
+    }
+
+    return db.collection('installations');
+};
 
 const findAll = async (filter, skip, limit) => {
+    // MongoDB aplica filtros, después salta documentos y por último limita resultados.
     return await getCollection()
         .find(filter)
         .skip(skip)
@@ -33,20 +43,25 @@ const findById = async (id) => {
 };
 
 const create = async (data) => {
+    // Guardamos timestamps aquí para que el controlador no tenga que conocer ese detalle.
+    const createdAt = new Date();
+    const updatedAt = new Date();
+
     const result = await getCollection().insertOne({
         ...data,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt,
+        updatedAt
     });
-    return { _id: result.insertedId, ...data };
+    return { _id: result.insertedId, ...data, createdAt, updatedAt };
 };
 
 const update = async (id, data) => {
     if (!ObjectId.isValid(id)) return null;
-    delete data._id; // Evitar error de MongoDB si se intenta actualizar el ID
+    // Nunca se debe intentar cambiar el _id de MongoDB.
+    const { _id, ...updateData } = data;
     const result = await getCollection().findOneAndUpdate(
         { _id: new ObjectId(id) },
-        { $set: { ...data, updatedAt: new Date() } },
+        { $set: { ...updateData, updatedAt: new Date() } },
         { returnDocument: 'after' }
     );
     return result;

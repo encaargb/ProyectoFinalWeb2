@@ -1,10 +1,11 @@
 const express = require('express');
+const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const installationsRoutes = require('./routes/installations.routes');
 const sportsRoutes = require('./routes/sports.routes');
 const weatherRoutes = require('./routes/weather.routes');
-const swaggerDocument = YAML.load('./docs/openapi.yaml');
+const swaggerDocument = YAML.load(path.join(__dirname, '..', 'docs', 'openapi.yaml'));
 const app = express();
 
 app.use(express.json());
@@ -20,5 +21,4 @@ app.use('/sports', sportsRoutes);
 app.use('/weather-records', weatherRoutes);
 
 module.exports = app;
-
 

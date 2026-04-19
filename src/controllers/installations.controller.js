@@ -1,7 +1,14 @@
 const installationRepository = require('../repositories/installation.repository');
 const { ObjectId } = require('mongodb');
 const { toXML } = require('jstoxml');
+const {
+    validateFilters,
+    validateInstallationForXml,
+    validateInstallationPayload,
+    validatePagination
+} = require('../validators/installations.validator');
 
+// Esta función transforma el documento de MongoDB (_id) en una respuesta más cómoda para la API (id).
 const mapInstallation = (inst) => {
     if (!inst) return null;
     const { _id, ...rest } = inst;
@@ -10,21 +17,31 @@ const mapInstallation = (inst) => {
 
 const getAllInstallations = async (req, res) => {
     try {
-        const { city, type, sport, page = 1, limit = 10 } = req.query;
+        // Primero validamos lo que llega por la URL antes de consultar la base de datos.
+        const filtersResult = validateFilters(req.query);
+        if (filtersResult.error) {
+            return res.status(400).json({ status: 400, message: filtersResult.error });
+        }
 
-        const filter = {};
-        if (city) filter.city = city;
-        if (type) filter.type = type;
-        if (sport) filter['sports.name'] = sport;
+        const paginationResult = validatePagination(req.query);
+        if (paginationResult.error) {
+            return res.status(400).json({ status: 400, message: paginationResult.error });
+        }
 
-        const pageNumber = parseInt(page, 10);
-        const limitNumber = parseInt(limit, 10);
-        const skip = (pageNumber - 1) * limitNumber;
-
-        const installations = await installationRepository.findAll(filter, skip, limitNumber);
+        const installations = await installationRepository.findAll(
+            filtersResult.value,
+            paginationResult.value.skip,
+            paginationResult.value.limit
+        );
         const mappedData = installations.map(mapInstallation);
 
-        res.status(200).json({ data: mappedData });
+        res.status(200).json({
+            data: mappedData,
+            pagination: {
+                page: paginationResult.value.page,
+                limit: paginationResult.value.limit
+            }
+        });
     } catch (error) {
         res.status(500).json({ status: 500, message: error.message });
     }
@@ -46,9 +63,15 @@ const getInstallationById = async (req, res) => {
 
         const mappedData = mapInstallation(installation);
 
-        // SOPORTE XML (Punto 6.1 de la práctica)
         const acceptHeader = req.get('Accept');
         if (acceptHeader && acceptHeader.includes('application/xml')) {
+            // Aunque la instalación exista, comprobamos que tenga la estructura mínima
+            // antes de convertirla a XML.
+            const xmlValidation = validateInstallationForXml(mappedData);
+            if (xmlValidation.error) {
+                return res.status(500).json({ status: 500, message: xmlValidation.error });
+            }
+
             const xmlOptions = {
                 header: true,
                 indent: '  '
@@ -58,7 +81,6 @@ const getInstallationById = async (req, res) => {
             return res.status(200).send(xmlContent);
         }
 
-        // Respuesta por defecto JSON
         res.status(200).json({ data: mappedData });
     } catch (error) {
         res.status(500).json({ status: 500, message: error.message });
@@ -67,35 +89,16 @@ const getInstallationById = async (req, res) => {
 
 const createInstallation = async (req, res) => {
     try {
-        const {
-            name,
-            type,
-            city,
-            sports,
-            location,
-            externalId,
-            source
-        } = req.body;
-
-        if (!name || !type || !city) {
+        // El validador también normaliza textos y aplica valores por defecto.
+        const validationResult = validateInstallationPayload(req.body);
+        if (validationResult.error) {
             return res.status(400).json({
                 status: 400,
-                message: 'Faltan campos requeridos: name, type y city.'
+                message: validationResult.error
             });
         }
 
-        const newInstallation = {
-            name,
-            type,
-            city,
-            sports: sports || [],
-            location: location || { type: 'Point', coordinates: [] },
-            externalId: externalId || null,
-            source: source || 'manual',
-            lastUpdated: new Date()
-        };
-
-        const result = await installationRepository.create(newInstallation);
+        const result = await installationRepository.create(validationResult.value);
         res.status(201).json({ data: mapInstallation(result) });
     } catch (error) {
         res.status(500).json({ status: 500, message: error.message });
@@ -105,45 +108,25 @@ const createInstallation = async (req, res) => {
 const updateInstallation = async (req, res) => {
     try {
         const { id } = req.params;
-        const {
-            name,
-            type,
-            city,
-            sports,
-            location,
-            externalId,
-            source,
-            lastUpdated
-        } = req.body;
-
         if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ status: 400, message: 'Invalid ID format' });
+            return res.status(400).json({ status: 400, message: 'Formato de ID no válido' });
         }
 
-        if (!name || !type || !city) {
+        // En este proyecto PUT exige el documento completo, igual que POST.
+        const validationResult = validateInstallationPayload(req.body);
+        if (validationResult.error) {
             return res.status(400).json({
                 status: 400,
-                message: 'Missing required fields'
+                message: validationResult.error
             });
         }
 
-        const updateData = {
-            name,
-            type,
-            city,
-            sports: sports || [],
-            location: location || { type: 'Point', coordinates: [] },
-            externalId,
-            source,
-            lastUpdated: lastUpdated ? new Date(lastUpdated) : new Date()
-        };
-
-        const updatedInstallation = await installationRepository.update(id, updateData);
+        const updatedInstallation = await installationRepository.update(id, validationResult.value);
 
         if (!updatedInstallation) {
             return res.status(404).json({
                 status: 404,
-                message: 'Installation not found'
+                message: 'Instalación no encontrada'
             });
         }
 
@@ -158,7 +141,7 @@ const deleteInstallation = async (req, res) => {
         const { id } = req.params;
 
         if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ status: 400, message: 'Invalid ID format' });
+            return res.status(400).json({ status: 400, message: 'Formato de ID no válido' });
         }
 
         const deleted = await installationRepository.remove(id);
@@ -166,13 +149,13 @@ const deleteInstallation = async (req, res) => {
         if (!deleted) {
             return res.status(404).json({
                 status: 404,
-                message: 'Installation not found'
+                message: 'Instalación no encontrada'
             });
         }
 
         res.status(200).json({
             status: 200,
-            message: 'Installation deleted successfully'
+            message: 'Instalación eliminada correctamente'
         });
     } catch (error) {
         res.status(500).json({ status: 500, message: error.message });
