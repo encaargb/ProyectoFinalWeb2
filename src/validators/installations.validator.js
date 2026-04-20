@@ -46,6 +46,13 @@ function validateFilters(query) {
     // Aquí convertimos los filtros de la URL al objeto que entiende MongoDB.
     const filters = {};
 
+    if (query.name !== undefined) {
+        if (!isNonEmptyString(query.name)) {
+            return { error: 'name debe ser un texto no vacío.' };
+        }
+        filters.name = { $regex: query.name.trim(), $options: 'i' };
+    }
+
     if (query.city !== undefined) {
         if (!isNonEmptyString(query.city)) {
             return { error: 'city debe ser un texto no vacío.' };

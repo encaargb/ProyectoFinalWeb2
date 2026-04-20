@@ -31,6 +31,13 @@ paths:
       description: Devuelve instalaciones con filtros opcionales y paginación.
       parameters:
         - in: query
+          name: name
+          required: false
+          schema:
+            type: string
+          description: Filtra por nombre de instalación. La búsqueda es parcial y no distingue mayúsculas.
+
+        - in: query
           name: city
           required: false
           schema:

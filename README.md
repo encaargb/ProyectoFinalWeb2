@@ -18,3 +18,11 @@ Además, el sistema se complementa con **información externa que enriquece los 
 - OpenAPI
 - Jest
 - Supertest
+
+## Importación de datos desde OSM
+La carga de instalaciones deportivas se hace con un script separado de la aplicación.
+
+Ejemplo con `npm`:
+```bash
+npm run import:osm -- --municipality=Getafe --db=sports_facilities_test
+```

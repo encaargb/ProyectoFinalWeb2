@@ -60,6 +60,16 @@ describe('Installations API - Unit Tests', () => {
             });
         });
 
+        test('Debe filtrar por nombre con búsqueda parcial sin distinguir mayúsculas', async () => {
+            mockCollection.toArray.mockResolvedValue([]);
+
+            await request(app).get('/installations?name=juan');
+
+            expect(mockCollection.find).toHaveBeenCalledWith({
+                name: { $regex: 'juan', $options: 'i' }
+            });
+        });
+
         test('Debe aplicar paginación correctamente', async () => {
             mockCollection.toArray.mockResolvedValue([]);
 
@@ -74,6 +84,13 @@ describe('Installations API - Unit Tests', () => {
 
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toContain('page');
+        });
+
+        test('Debe devolver 400 si name es vacío', async () => {
+            const res = await request(app).get('/installations?name=');
+
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toContain('name');
         });
     });
 

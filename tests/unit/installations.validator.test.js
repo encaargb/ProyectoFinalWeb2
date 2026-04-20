@@ -16,8 +16,15 @@ describe('Installations validator', () => {
     });
 
     test('validateFilters rechaza filtros vacíos', () => {
+        expect(validateFilters({ name: '   ' }).error).toContain('name');
         expect(validateFilters({ type: '   ' }).error).toContain('type');
         expect(validateFilters({ sport: '' }).error).toContain('sport');
+    });
+
+    test('validateFilters convierte name en búsqueda parcial case-insensitive', () => {
+        expect(validateFilters({ name: 'Juan' }).value).toEqual({
+            name: { $regex: 'Juan', $options: 'i' }
+        });
     });
 
     test('validateInstallationPayload rechaza un cuerpo que no es objeto', () => {

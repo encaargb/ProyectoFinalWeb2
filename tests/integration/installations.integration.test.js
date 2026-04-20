@@ -62,6 +62,19 @@ describe('Installations API - INTEGRATION TESTS (End-to-End)', () => {
         expect(res.body.data[0].name).toBe('Gym Barcelona');
     });
 
+    test('Debe filtrar instalaciones por nombre con búsqueda parcial', async () => {
+        await db.collection('installations').insertMany([
+            { name: 'Polideportivo Juan de la Cierva', type: 'sports_centre', city: 'Getafe' },
+            { name: 'Centro Deportivo Norte', type: 'sports_centre', city: 'Getafe' }
+        ]);
+
+        const res = await request(app).get('/installations?name=juan');
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.data).toHaveLength(1);
+        expect(res.body.data[0].name).toContain('Juan');
+    });
+
     test('Debe actualizar los datos en la base de datos real', async () => {
         const inst = { name: 'Old Name', type: 'gym', city: 'Madrid' };
         const result = await db.collection('installations').insertOne(inst);
