@@ -1,7 +1,14 @@
 const request = require('supertest');
 
 jest.mock('../../src/config/db', () => ({
-    getDB: jest.fn(),
+    getDB: jest.fn(() => ({
+        collection: jest.fn(() => ({
+            find: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockReturnThis(),
+            toArray: jest.fn().mockResolvedValue([])
+        }))
+    })),
     connectDB: jest.fn().mockResolvedValue({})
 }));
 

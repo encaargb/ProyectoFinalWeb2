@@ -1,12 +1,20 @@
 const express = require('express');
 const router = express.Router();
 
-/**
- * @route GET /sports
- * @desc Obtener todos los deportes (Próximamente)
- */
-router.get('/', (req, res) => {
-    res.status(200).json({ message: 'Sports endpoint - Work in progress' });
-});
+const {
+    createSport,
+    deleteSport,
+    getAllSports,
+    getSportById,
+    patchSport,
+    updateSport
+} = require('../controllers/sports.controller');
+
+router.get('/', getAllSports);
+router.post('/', createSport);
+router.get('/:id', getSportById);
+router.put('/:id', updateSport);
+router.patch('/:id', patchSport);
+router.delete('/:id', deleteSport);
 
 module.exports = router;

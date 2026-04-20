@@ -9,9 +9,24 @@ info:
 servers:
   - url: http://localhost:3000
 
+tags:
+  - name: General
+    description: Estado general y disponibilidad de la API.
+  - name: Installations
+    description: Consulta y gestión de instalaciones deportivas.
+  - name: Sports
+    description: Consulta y gestión de deportes del sistema.
+  - name: WeatherRecords
+    description: Consulta del histórico meteorológico persistido.
+
 paths:
+  # =================================================================
+  # General
+  # =================================================================
   /:
     get:
+      tags:
+        - General
       summary: Check API status
       responses:
         '200':
@@ -25,8 +40,13 @@ paths:
                     type: string
                     example: Sports Facilities API is running
 
+  # =================================================================
+  # Installations
+  # =================================================================
   /installations:
     get:
+      tags:
+        - Installations
       summary: Obtener instalaciones
       description: Devuelve instalaciones con filtros opcionales y paginación.
       parameters:
@@ -92,6 +112,8 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     post:
+      tags:
+        - Installations
       summary: Crear instalación
       description: Crea una instalación validando el cuerpo JSON antes de guardarlo.
       requestBody:
@@ -119,6 +141,8 @@ paths:
 
   /installations/{id}:
     get:
+      tags:
+        - Installations
       summary: Obtener instalación por id
       description: >
         Devuelve una instalación por su identificador. Si el cliente envía
@@ -163,6 +187,8 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     put:
+      tags:
+        - Installations
       summary: Actualizar instalación por id
       description: Actualiza una instalación existente. Este endpoint exige el documento completo.
       parameters:
@@ -202,6 +228,8 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     delete:
+      tags:
+        - Installations
       summary: Eliminar instalación por id
       description: Elimina una instalación existente.
       parameters:
@@ -231,14 +259,256 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # =================================================================
+  # Sports
+  # =================================================================
   /sports:
     get:
-      summary: Get all sports (Not implemented yet)
+      tags:
+        - Sports
+      summary: Obtener deportes
+      description: Devuelve el listado de deportes con filtros opcionales y paginación.
+      parameters:
+        - in: query
+          name: name
+          required: false
+          schema:
+            type: string
+          description: Filtra por nombre usando búsqueda parcial sin distinguir mayúsculas.
+        - in: query
+          name: osmKey
+          required: false
+          schema:
+            type: string
+          description: Filtra por clave procedente de OSM.
+        - in: query
+          name: category
+          required: false
+          schema:
+            type: string
+          description: Filtra por categoría.
+        - in: query
+          name: environment
+          required: false
+          schema:
+            type: string
+          description: Filtra por entorno.
+        - in: query
+          name: missingMetadata
+          required: false
+          schema:
+            type: boolean
+          description: Si vale true, devuelve solo deportes con category o environment a null.
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+          description: Número de página.
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            example: 10
+          description: Número de resultados por página.
       responses:
         '200':
-          description: List of sports
+          description: Lista de deportes obtenida correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportsListResponse'
+        '400':
+          description: Filtros o paginación no válidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Sports
+      summary: Crear deporte
+      description: Crea un deporte nuevo en el sistema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SportInput'
+      responses:
+        '201':
+          description: Deporte creado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Sport'
+        '400':
+          description: JSON inválido o faltan campos obligatorios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sports/{id}:
+    get:
+      tags:
+        - Sports
+      summary: Obtener deporte por id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Identificador MongoDB del deporte
+      responses:
+        '200':
+          description: Deporte obtenido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Sport'
+        '400':
+          description: Formato de ID no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Deporte no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Sports
+      summary: Actualizar deporte por id
+      description: Reemplaza el documento completo del deporte.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Identificador MongoDB del deporte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SportInput'
+      responses:
+        '200':
+          description: Deporte actualizado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Sport'
+        '400':
+          description: JSON inválido o ID no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Deporte no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Sports
+      summary: Actualizar parcialmente deporte por id
+      description: Modifica solo los campos enviados del deporte.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Identificador MongoDB del deporte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SportPatchInput'
+      responses:
+        '200':
+          description: Deporte actualizado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Sport'
+        '400':
+          description: JSON inválido, cuerpo vacío o ID no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Deporte no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Sports
+      summary: Eliminar deporte por id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Identificador MongoDB del deporte
+      responses:
+        '200':
+          description: Deporte eliminado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Formato de ID no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Deporte no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # =================================================================
+  # Weather Records
+  # =================================================================
   /weather-records:
     get:
+      tags:
+        - WeatherRecords
       summary: Get all weather records (Not implemented yet)
       responses:
         '200':
@@ -348,6 +618,76 @@ components:
           format: date-time
           example: "2024-03-24T12:00:00Z"
 
+    Sport:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "67926b0a8863f61b0c000010"
+        name:
+          type: string
+          example: Tenis
+        osmKey:
+          type: string
+          nullable: true
+          example: tennis
+        category:
+          type: string
+          nullable: true
+          example: racket
+        environment:
+          type: string
+          nullable: true
+          example: outdoor
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-03-24T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-03-24T12:00:00Z"
+
+    SportInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Tenis
+        osmKey:
+          type: string
+          nullable: true
+          example: tennis
+        category:
+          type: string
+          nullable: true
+          example: racket
+        environment:
+          type: string
+          nullable: true
+          example: outdoor
+
+    SportPatchInput:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Tenis
+        osmKey:
+          type: string
+          nullable: true
+          example: tennis
+        category:
+          type: string
+          nullable: true
+          example: racket
+        environment:
+          type: string
+          nullable: true
+          example: outdoor
+
     InstallationsListResponse:
       type: object
       properties:
@@ -355,6 +695,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Installation'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    SportsListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sport'
         pagination:
           $ref: '#/components/schemas/PaginationInfo'
 
