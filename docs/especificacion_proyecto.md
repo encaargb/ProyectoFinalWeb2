@@ -170,6 +170,55 @@ Cada vez que se consulta el clima de una instalación:
 - la nueva información obtenida se registra en base de datos;
 - el histórico previo se conserva.
 
+Reglas de vigencia:
+
+- la vigencia se calculará sobre `queryDate`;
+- el registro de referencia será siempre el más reciente de la instalación, ordenado por `queryDate desc`;
+- la vigencia por defecto será de `60 minutos`;
+- el valor real de vigencia será configurable por entorno mediante `WEATHER_CACHE_TTL_MINUTES`.
+
+Reglas de resolución:
+
+- si el identificador de instalación no tiene formato válido de MongoDB, el endpoint devolverá `400`;
+- si la instalación no existe, el endpoint devolverá `404`;
+- si la instalación existe pero no tiene coordenadas válidas, el endpoint devolverá `400`;
+- si no existe ningún `weather-record` previo para la instalación, se consultará el proveedor externo, se persistirá un nuevo registro y se devolverá `200`;
+- si existe un registro vigente, se devolverá ese mismo registro con `200`;
+- si el último registro está caducado, se consultará el proveedor externo, se persistirá un nuevo documento y se devolverá `200`.
+
+Reglas de integración con proveedor externo:
+
+- el proveedor acordado para esta fase es OpenWeather;
+- se utilizará `Current Weather API`;
+- la integración se configurará con:
+  - `OPENWEATHER_API_KEY`
+  - `OPENWEATHER_BASE_URL`
+  - `WEATHER_CACHE_TTL_MINUTES`
+- el valor base recomendado para `OPENWEATHER_BASE_URL` será `https://api.openweathermap.org/data/2.5`;
+- la consulta al proveedor se hará por coordenadas de la instalación;
+- se usarán `units=metric` y `lang=es`.
+
+Mapeo acordado de respuesta externa a `weather-records`:
+
+- `installationId` <- `_id` de la instalación
+- `queryDate` <- hora actual del servidor en el momento de la consulta
+- `temperature` <- `main.temp`
+- `condition` <- `weather[0].description`
+- `humidity` <- `main.humidity`
+- `windspeed` <- `wind.speed`
+
+Reglas de validación de respuesta externa:
+
+- `temperature` y `condition` son obligatorios para aceptar la respuesta del proveedor;
+- si falta cualquiera de ellos, el endpoint devolverá `502`;
+- `humidity` y `windspeed` son opcionales y se persistirán como `null` si no vienen informados.
+
+Reglas de error:
+
+- si falta configuración interna necesaria para la integración meteorológica, el endpoint devolverá `500`;
+- si el proveedor externo falla o devuelve una respuesta inválida, el endpoint devolverá `502`;
+- los mensajes de error de la API pública se mantendrán en español.
+
 ### 6.3. Ausencia de script específico de weather
 
 No se requiere un script manual específico para meteorología, ya que la obtención y persistencia del clima se resuelve bajo demanda cuando se consulta una instalación.
@@ -226,6 +275,18 @@ Reglas:
 - `q` busca de forma textual sobre `name`, `type` y `city`;
 - `q` puede convivir con el resto de filtros;
 - la documentación y los tests deberán reflejar con precisión cómo se combinan estos filtros.
+
+### 9.1.b. `GET /installations/{id}/weather`
+
+Devuelve exclusivamente el `weather-record` resuelto para la instalación indicada.
+
+Formato de respuesta exitosa:
+
+- `{ "data": { ...weatherRecord } }`
+
+Formato de error:
+
+- `{ "status": number, "message": string }`
 
 ### 9.2. `GET /sports`
 

@@ -158,7 +158,83 @@ Añadir y documentar:
 
 ---
 
-## Iteración 3. Búsqueda textual avanzada en `installations`
+## Iteración 3. Meteorología bajo demanda por instalación
+
+### Objetivo
+
+Implementar `GET /installations/{id}/weather` con caché temporal, consulta a OpenWeather y persistencia en `weather-records`.
+
+### Endpoint afectado
+
+- `GET /installations/{id}/weather`
+
+### Decisiones funcionales cerradas
+
+- si el `id` no es válido, responde `400`
+- si la instalación no existe, responde `404`
+- si la instalación no tiene coordenadas válidas, responde `400`
+- si no hay weather previo, consulta proveedor, crea registro y responde `200`
+- si hay weather previo vigente, reutiliza ese registro y responde `200`
+- si el registro previo está caducado, consulta proveedor, crea un nuevo documento y responde `200`
+- la vigencia se calcula sobre `queryDate`
+- el registro de referencia es siempre el más reciente ordenado por `queryDate desc`
+- el TTL por defecto es `60 minutos`
+- el TTL será configurable mediante `WEATHER_CACHE_TTL_MINUTES`
+- el proveedor acordado es `OpenWeather Current Weather API`
+- la integración usará:
+  - `OPENWEATHER_API_KEY`
+  - `OPENWEATHER_BASE_URL`
+  - `WEATHER_CACHE_TTL_MINUTES`
+- la consulta al proveedor se hará por coordenadas de la instalación
+- se usarán `units=metric` y `lang=es`
+- `queryDate` será la hora actual del servidor
+- `temperature` y `condition` son obligatorios
+- `humidity` y `windspeed` se persistirán como `null` cuando falten
+- si falta configuración interna, el endpoint devolverá `500`
+- si falla el proveedor externo o devuelve respuesta inválida, el endpoint devolverá `502`
+- la respuesta exitosa tendrá el formato:
+  - `{ "data": { ...weatherRecord } }`
+
+### Cambios de implementación
+
+- crear servicio de integración con OpenWeather
+- crear lógica de vigencia/caducidad del weather
+- añadir acceso al último `weather-record` por instalación
+- ampliar `installations` con el handler `GET /installations/{id}/weather`
+- persistir un nuevo documento cuando no exista registro o esté caducado
+- validar coordenadas y configuración de entorno
+- mantener mensajes de error en español
+
+### Cambios en OpenAPI
+
+- documentar `GET /installations/{id}/weather`
+- documentar respuestas `200`, `400`, `404`, `500`, `502`
+- reflejar que la respuesta contiene un `weather-record`
+- documentar la relación con el `_id` interno de la instalación
+
+### Tests a implementar
+
+- unit tests del servicio de OpenWeather
+- unit tests de vigencia/caducidad
+- unit tests del controlador
+- integración del flujo:
+  - sin registro previo
+  - con registro vigente
+  - con registro caducado
+  - instalación inexistente
+  - id inválido
+  - instalación sin coordenadas
+  - fallo del proveedor externo
+  - configuración incompleta
+
+### Resultado esperado
+
+- la API podrá resolver y persistir meteorología bajo demanda por instalación
+- `weather-records` pasará a ser además el histórico real generado por la integración externa
+
+---
+
+## Iteración 4. Búsqueda textual avanzada en `installations`
 
 ### Objetivo
 
@@ -234,7 +310,7 @@ Documentar:
 
 ---
 
-## Iteración 4. Cierre transversal y alineación global
+## Iteración 5. Cierre transversal y alineación global
 
 ### Objetivo
 
@@ -293,14 +369,16 @@ Revisar y, si procede, definir índices MongoDB sobre:
 
 1. Iteración 1: `sports`
 2. Iteración 2: `weather-records`
-3. Iteración 3: búsqueda avanzada en `installations`
-4. Iteración 4: cierre transversal
+3. Iteración 3: meteorología bajo demanda por instalación
+4. Iteración 4: búsqueda avanzada en `installations`
+5. Iteración 5: cierre transversal
 
 ## Motivo de este orden
 
 - `sports` completa primero un recurso base del dominio
 - `weather-records` completa el histórico meteorológico como recurso de consulta
-- `installations` se amplía después con búsqueda avanzada sin mezclar todavía meteorología
+- la meteorología bajo demanda aprovecha el histórico ya construido en `weather-records`
+- `installations` se amplía después con búsqueda avanzada
 - el cierre transversal evita rehacer documentación y tests varias veces
 
 ## Criterio de cierre por iteración
