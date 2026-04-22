@@ -31,6 +31,7 @@ out center tags;`;
 }
 
 function getCoordinates(element) {
+    // Algunos elementos de OSM son nodos y otros way/relation con centro calculado.
     if (Number.isFinite(element?.lon) && Number.isFinite(element?.lat)) {
         return [element.lon, element.lat];
     }
@@ -43,6 +44,7 @@ function getCoordinates(element) {
 }
 
 function normalizeSports(tags = {}) {
+    // OSM puede traer varios deportes en un único tag separados por ; o ,
     if (!tags.sport || typeof tags.sport !== 'string') {
         return [];
     }
@@ -58,10 +60,12 @@ function normalizeSports(tags = {}) {
 }
 
 function inferInstallationType(tags = {}) {
+    // Elegimos el tag más representativo disponible para clasificar la instalación.
     return tags.leisure || tags.amenity || tags.building || 'sports_facility';
 }
 
 function inferInstallationName(element, municipality) {
+    // Si OSM no da nombre, construimos uno técnico para no perder el registro.
     if (typeof element?.tags?.name === 'string' && element.tags.name.trim().length > 0) {
         return element.tags.name.trim();
     }
@@ -99,6 +103,7 @@ function transformOverpassElements(elements, options = {}) {
         throw new Error('La respuesta de OSM no contiene una lista válida de elementos');
     }
 
+    // Deduplicamos por externalId para evitar repetir el mismo recurso en la importación.
     const documentsById = new Map();
 
     for (const element of elements) {
@@ -169,6 +174,7 @@ async function fetchOsmElementsWithFallback({
 }) {
     let lastError;
 
+    // Probamos varias instancias públicas de Overpass porque algunas suelen saturarse.
     for (const currentUrl of overpassUrls) {
         try {
             return await fetchOsmElements({
@@ -206,6 +212,7 @@ async function upsertInstallationsFromService({ db, installations }) {
 
     const collection = db.collection('installations');
 
+    // Upsert permite crear o actualizar la instalación según externalId + source.
     const operations = installations.map((installation) => ({
         updateOne: {
             filter: {

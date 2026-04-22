@@ -4,6 +4,7 @@ function isNonEmptyString(value) {
     return typeof value === 'string' && value.trim().length > 0;
 }
 
+// Este helper normaliza campos opcionales para que vacío y null se traten de forma consistente.
 function normalizeOptionalString(value) {
     if (value === undefined) {
         return undefined;
@@ -45,6 +46,7 @@ function validateSportsPagination(query) {
 }
 
 function validateSportsFilters(query) {
+    // Construimos el objeto de filtro directamente en el formato que entiende MongoDB.
     const filters = {};
 
     if (query.name !== undefined) {
@@ -81,6 +83,7 @@ function validateSportsFilters(query) {
         }
 
         if (query.missingMetadata === 'true') {
+            // Un deporte está incompleto si falta category o environment.
             filters.$or = [
                 { category: null },
                 { environment: null }
@@ -98,6 +101,7 @@ function validateSportPayload(payload, options = {}) {
         return { error: 'El cuerpo de la petición debe ser un objeto JSON.' };
     }
 
+    // En PUT/POST name es obligatorio; en PATCH solo se valida si se envía.
     if (!partial || payload.name !== undefined) {
         if (!isNonEmptyString(payload.name)) {
             return { error: 'El campo name es obligatorio y debe ser un texto no vacío.' };

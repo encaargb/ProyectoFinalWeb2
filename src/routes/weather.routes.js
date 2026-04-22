@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+// De momento este recurso sigue siendo un placeholder hasta la siguiente iteración.
 /**
  * @route GET /weather-records
  * @desc Obtener registros meteorológicos (Próximamente)

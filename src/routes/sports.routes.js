@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+// Este router expone el CRUD público del recurso sports.
 const {
     createSport,
     deleteSport,

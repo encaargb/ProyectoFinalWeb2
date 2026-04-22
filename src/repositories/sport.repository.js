@@ -13,6 +13,7 @@ const getCollection = () => {
 };
 
 const findAll = async (filter, skip, limit) => {
+    // Igual que en installations, Mongo aplica filtro, skip y limit en cadena.
     return await getCollection()
         .find(filter)
         .skip(skip)
@@ -26,6 +27,7 @@ const findById = async (id) => {
 };
 
 const create = async (data) => {
+    // El repositorio es quien añade las marcas de auditoría al persistir.
     const createdAt = new Date();
     const updatedAt = new Date();
 
@@ -40,6 +42,7 @@ const create = async (data) => {
 
 const update = async (id, data) => {
     if (!ObjectId.isValid(id)) return null;
+    // Eliminamos _id si viene en el payload para no intentar modificarlo.
     const { _id, ...updateData } = data;
 
     return await getCollection().findOneAndUpdate(

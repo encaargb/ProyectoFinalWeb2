@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+// El router solo define qué URL llama a cada función del controlador.
 const {
     getAllInstallations,
     getInstallationById,

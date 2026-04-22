@@ -33,6 +33,7 @@ const getAllInstallations = async (req, res) => {
             paginationResult.value.skip,
             paginationResult.value.limit
         );
+        // El controlador adapta el resultado del repositorio al formato final de la API.
         const mappedData = installations.map(mapInstallation);
 
         res.status(200).json({
@@ -81,6 +82,7 @@ const getInstallationById = async (req, res) => {
             return res.status(200).send(xmlContent);
         }
 
+        // Si no se pide XML, la salida por defecto es JSON.
         res.status(200).json({ data: mappedData });
     } catch (error) {
         res.status(500).json({ status: 500, message: error.message });

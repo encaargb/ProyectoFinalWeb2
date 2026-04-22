@@ -3,6 +3,7 @@ const { MongoClient } = require('mongodb');
 let client;
 let db;
 
+// Guardamos cliente y base en variables compartidas para reutilizar la conexión.
 // Esta función abre la conexión una sola vez y reutiliza la misma base de datos
 // mientras la aplicación siga viva.
 async function connectDB(testDbName = null) {

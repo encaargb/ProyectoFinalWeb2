@@ -15,6 +15,7 @@ const mapSport = (sport) => {
 
 const getAllSports = async (req, res) => {
     try {
+        // Validamos filtros y paginación antes de consultar MongoDB.
         const filtersResult = validateSportsFilters(req.query);
         if (filtersResult.error) {
             return res.status(400).json({ status: 400, message: filtersResult.error });
@@ -31,6 +32,7 @@ const getAllSports = async (req, res) => {
             paginationResult.value.limit
         );
 
+        // El listado devuelve datos y metadatos de paginación.
         res.status(200).json({
             data: sports.map(mapSport),
             pagination: {
@@ -65,6 +67,7 @@ const getSportById = async (req, res) => {
 
 const createSport = async (req, res) => {
     try {
+        // POST requiere documento completo según el contrato actual.
         const validationResult = validateSportPayload(req.body);
         if (validationResult.error) {
             return res.status(400).json({ status: 400, message: validationResult.error });
@@ -119,6 +122,7 @@ const patchSport = async (req, res) => {
             return res.status(400).json({ status: 400, message: 'Debes indicar al menos un campo para actualizar.' });
         }
 
+        // PATCH solo toca los campos enviados, sin exigir documento completo.
         const updatedSport = await sportRepository.update(id, validationResult.value);
 
         if (!updatedSport) {

@@ -166,6 +166,7 @@ function validateInstallationPayload(payload, options = {}) {
         return { error: 'El cuerpo de la petición debe ser un objeto JSON.' };
     }
 
+    // Estos son los campos mínimos que el contrato exige para una instalación.
     const requiredFields = ['name', 'type', 'city'];
     for (const field of requiredFields) {
         if (requireAllFields && !isNonEmptyString(payload[field])) {
