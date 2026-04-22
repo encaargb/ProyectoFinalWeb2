@@ -509,10 +509,116 @@ paths:
     get:
       tags:
         - WeatherRecords
-      summary: Get all weather records (Not implemented yet)
+      summary: Obtener registros meteorológicos
+      description: Devuelve el histórico meteorológico persistido con filtros, paginación y ordenación.
+      parameters:
+        - in: query
+          name: installationId
+          required: false
+          schema:
+            type: string
+          description: Filtra por el identificador MongoDB de la instalación asociada.
+        - in: query
+          name: dateFrom
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Fecha inicial del rango aplicada sobre queryDate.
+        - in: query
+          name: dateTo
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Fecha final del rango aplicada sobre queryDate.
+        - in: query
+          name: condition
+          required: false
+          schema:
+            type: string
+          description: Filtra por condición meteorológica usando búsqueda parcial.
+        - in: query
+          name: sortBy
+          required: false
+          schema:
+            type: string
+            enum: [queryDate, temperature, createdAt]
+            default: queryDate
+          description: Campo utilizado para ordenar.
+        - in: query
+          name: sortOrder
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Dirección de la ordenación.
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+          description: Número de página.
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            example: 10
+          description: Número de resultados por página.
       responses:
         '200':
-          description: List of weather records
+          description: Lista de registros meteorológicos obtenida correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherRecordsListResponse'
+        '400':
+          description: Filtros, ordenación o paginación no válidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /weather-records/{id}:
+    get:
+      tags:
+        - WeatherRecords
+      summary: Obtener registro meteorológico por id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Identificador MongoDB del registro meteorológico
+      responses:
+        '200':
+          description: Registro meteorológico obtenido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/WeatherRecord'
+        '400':
+          description: Formato de ID no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Registro meteorológico no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -688,6 +794,42 @@ components:
           nullable: true
           example: outdoor
 
+    WeatherRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "67926b0a8863f61b0c000020"
+        installationId:
+          type: string
+          example: "67926b0a8863f61b0c000001"
+        queryDate:
+          type: string
+          format: date-time
+          example: "2024-03-24T12:00:00Z"
+        temperature:
+          type: number
+          example: 21
+        condition:
+          type: string
+          example: clear sky
+        humidity:
+          type: number
+          nullable: true
+          example: 40
+        windspeed:
+          type: number
+          nullable: true
+          example: 10
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-03-24T12:00:01Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-03-24T12:00:01Z"
+
     InstallationsListResponse:
       type: object
       properties:
@@ -707,6 +849,25 @@ components:
             $ref: '#/components/schemas/Sport'
         pagination:
           $ref: '#/components/schemas/PaginationInfo'
+
+    SortingInfo:
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        queryDate: -1
+
+    WeatherRecordsListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeatherRecord'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        sorting:
+          $ref: '#/components/schemas/SortingInfo'
 
     PaginationInfo:
       type: object

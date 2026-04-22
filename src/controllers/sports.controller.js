@@ -13,6 +13,7 @@ const mapSport = (sport) => {
     return { id: _id.toString(), ...rest };
 };
 
+// Lista deportes con filtros opcionales y paginación.
 const getAllSports = async (req, res) => {
     try {
         // Validamos filtros y paginación antes de consultar MongoDB.
@@ -45,6 +46,7 @@ const getAllSports = async (req, res) => {
     }
 };
 
+// Devuelve el detalle de un deporte a partir de su id.
 const getSportById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -65,6 +67,7 @@ const getSportById = async (req, res) => {
     }
 };
 
+// Crea un deporte nuevo con validación previa del body JSON.
 const createSport = async (req, res) => {
     try {
         // POST requiere documento completo según el contrato actual.
@@ -80,6 +83,7 @@ const createSport = async (req, res) => {
     }
 };
 
+// PUT exige el documento completo del deporte.
 const updateSport = async (req, res) => {
     try {
         const { id } = req.params;
@@ -105,6 +109,7 @@ const updateSport = async (req, res) => {
     }
 };
 
+// PATCH solo modifica los campos enviados por el cliente.
 const patchSport = async (req, res) => {
     try {
         const { id } = req.params;
@@ -135,6 +140,7 @@ const patchSport = async (req, res) => {
     }
 };
 
+// El borrado devuelve un mensaje simple y no expone el documento eliminado.
 const deleteSport = async (req, res) => {
     try {
         const { id } = req.params;
