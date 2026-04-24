@@ -5,12 +5,14 @@ const router = express.Router();
 const {
     getAllInstallations,
     getInstallationById,
+    getInstallationWeather,
     createInstallation,
     updateInstallation,
     deleteInstallation,
 } = require('../controllers/installations.controller');
 
 router.get('/', getAllInstallations);
+router.get('/:id/weather', getInstallationWeather);
 router.get('/:id', getInstallationById);
 router.post('/', createInstallation);
 router.put('/:id', updateInstallation);

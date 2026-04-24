@@ -20,7 +20,8 @@ describe('Weather Record Repository - Unit Tests', () => {
             skip: jest.fn().mockReturnThis(),
             limit: jest.fn().mockReturnThis(),
             toArray: jest.fn(),
-            findOne: jest.fn()
+            findOne: jest.fn(),
+            insertOne: jest.fn()
         };
 
         mockDb = {
@@ -50,5 +51,39 @@ describe('Weather Record Repository - Unit Tests', () => {
     test('findById devuelve null si el ID no es válido', async () => {
         const result = await weatherRecordRepository.findById('invalid-id');
         expect(result).toBeNull();
+    });
+
+    test('findLatestByInstallationId busca por installationId ordenando por queryDate desc', async () => {
+        const installationId = new ObjectId();
+        const latestRecord = { _id: new ObjectId(), installationId, queryDate: new Date() };
+        mockCollection.findOne.mockResolvedValue(latestRecord);
+
+        const result = await weatherRecordRepository.findLatestByInstallationId(installationId.toString());
+
+        expect(mockCollection.findOne).toHaveBeenCalledWith(
+            { installationId },
+            { sort: { queryDate: -1 } }
+        );
+        expect(result).toEqual(latestRecord);
+    });
+
+    test('create devuelve el documento creado con timestamps', async () => {
+        const insertedId = new ObjectId();
+        mockCollection.insertOne.mockResolvedValue({ insertedId });
+
+        const result = await weatherRecordRepository.create({
+            installationId: new ObjectId(),
+            queryDate: new Date(),
+            temperature: 21,
+            condition: 'cielo claro',
+            humidity: null,
+            windspeed: null
+        });
+
+        expect(result).toEqual(expect.objectContaining({
+            _id: insertedId,
+            createdAt: expect.any(Date),
+            updatedAt: expect.any(Date)
+        }));
     });
 });

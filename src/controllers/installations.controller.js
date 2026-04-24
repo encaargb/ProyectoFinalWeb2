@@ -1,6 +1,12 @@
 const installationRepository = require('../repositories/installation.repository');
+const weatherRecordRepository = require('../repositories/weather-record.repository');
 const { ObjectId } = require('mongodb');
 const { toXML } = require('jstoxml');
+const {
+    fetchCurrentWeatherByCoordinates,
+    getWeatherConfig,
+    isWeatherRecordFresh
+} = require('../services/openweather.service');
 const {
     validateFilters,
     validateInstallationForXml,
@@ -14,6 +20,31 @@ const mapInstallation = (inst) => {
     const { _id, ...rest } = inst;
     return { id: _id.toString(), ...rest };
 };
+
+const mapWeatherRecord = (record) => {
+    if (!record) return null;
+    const { _id, ...rest } = record;
+    return {
+        id: _id.toString(),
+        ...rest,
+        installationId: rest.installationId?.toString?.() ?? rest.installationId
+    };
+};
+
+function getCoordinatesFromInstallation(installation) {
+    const coordinates = installation?.location?.coordinates;
+
+    if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+        return null;
+    }
+
+    const [lon, lat] = coordinates.map((value) => Number(value));
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+        return null;
+    }
+
+    return { lon, lat };
+}
 
 const getAllInstallations = async (req, res) => {
     try {
@@ -86,6 +117,55 @@ const getInstallationById = async (req, res) => {
         res.status(200).json({ data: mappedData });
     } catch (error) {
         res.status(500).json({ status: 500, message: error.message });
+    }
+};
+
+// Este endpoint reutiliza el weather más reciente si sigue vigente; si no, consulta OpenWeather.
+const getInstallationWeather = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ status: 400, message: 'Formato de ID no válido' });
+        }
+
+        const installation = await installationRepository.findById(id);
+        if (!installation) {
+            return res.status(404).json({ status: 404, message: 'Instalación no encontrada' });
+        }
+
+        const coordinates = getCoordinatesFromInstallation(installation);
+        if (!coordinates) {
+            return res.status(400).json({
+                status: 400,
+                message: 'La instalación no tiene coordenadas válidas para consultar meteorología'
+            });
+        }
+
+        const { ttlMinutes } = getWeatherConfig();
+        const latestRecord = await weatherRecordRepository.findLatestByInstallationId(id);
+
+        if (latestRecord && isWeatherRecordFresh(latestRecord.queryDate, ttlMinutes)) {
+            return res.status(200).json({ data: mapWeatherRecord(latestRecord) });
+        }
+
+        const weatherPayload = await fetchCurrentWeatherByCoordinates({
+            lat: coordinates.lat,
+            lon: coordinates.lon
+        });
+
+        const createdRecord = await weatherRecordRepository.create({
+            installationId: new ObjectId(id),
+            ...weatherPayload
+        });
+
+        return res.status(200).json({ data: mapWeatherRecord(createdRecord) });
+    } catch (error) {
+        if (error.status) {
+            return res.status(error.status).json({ status: error.status, message: error.message });
+        }
+
+        return res.status(500).json({ status: 500, message: error.message });
     }
 };
 
@@ -167,6 +247,7 @@ const deleteInstallation = async (req, res) => {
 module.exports = {
     getAllInstallations,
     getInstallationById,
+    getInstallationWeather,
     createInstallation,
     updateInstallation,
     deleteInstallation

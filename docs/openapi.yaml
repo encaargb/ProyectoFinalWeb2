@@ -186,6 +186,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /installations/{id}/weather:
+    get:
+      tags:
+        - Installations
+      summary: Obtener meteorología de una instalación
+      description: >
+        Devuelve el weather-record más reciente de la instalación si sigue vigente.
+        Si no existe o ha caducado, consulta OpenWeather con las coordenadas de la
+        instalación, crea un nuevo registro en weather-records y devuelve ese resultado.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Identificador MongoDB de la instalación
+      responses:
+        '200':
+          description: Información meteorológica obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/WeatherRecord'
+        '400':
+          description: Formato de ID no válido o instalación sin coordenadas válidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Instalación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: La integración meteorológica no está configurada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: No se pudo obtener la información meteorológica del servicio externo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
     put:
       tags:
         - Installations

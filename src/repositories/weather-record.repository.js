@@ -28,7 +28,30 @@ const findById = async (id) => {
     return await getCollection().findOne({ _id: new ObjectId(id) });
 };
 
+// Para resolver caché buscamos el registro más reciente de una instalación.
+const findLatestByInstallationId = async (installationId) => {
+    return await getCollection().findOne(
+        { installationId: new ObjectId(installationId) },
+        { sort: { queryDate: -1 } }
+    );
+};
+
+const create = async (data) => {
+    const createdAt = new Date();
+    const updatedAt = new Date();
+
+    const result = await getCollection().insertOne({
+        ...data,
+        createdAt,
+        updatedAt
+    });
+
+    return { _id: result.insertedId, ...data, createdAt, updatedAt };
+};
+
 module.exports = {
+    create,
     findAll,
-    findById
+    findById,
+    findLatestByInstallationId
 };
