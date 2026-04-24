@@ -121,4 +121,60 @@ describe('Weather Records API - Integration Tests', () => {
         expect(res.statusCode).toBe(200);
         expect(res.body.data.id).toBe(result.insertedId.toString());
     });
+
+    test('Debe devolver 400 si installationId no es un ObjectId válido', async () => {
+        const res = await request(app).get('/weather-records?installationId=id-invalido');
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.message).toContain('installationId');
+    });
+
+    test('Debe devolver 400 si dateFrom no es una fecha válida', async () => {
+        const res = await request(app).get('/weather-records?dateFrom=ayer');
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.message).toContain('dateFrom');
+    });
+
+    test('Debe devolver 400 si dateTo no es una fecha válida', async () => {
+        const res = await request(app).get('/weather-records?dateTo=mañana');
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.message).toContain('dateTo');
+    });
+
+    test('Debe devolver 400 si dateFrom es posterior a dateTo', async () => {
+        const res = await request(app).get('/weather-records?dateFrom=2026-04-22T10:00:00.000Z&dateTo=2026-04-21T10:00:00.000Z');
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.message).toContain('dateFrom');
+    });
+
+    test('Debe devolver 400 si sortBy no está permitido', async () => {
+        const res = await request(app).get('/weather-records?sortBy=humidity');
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.message).toContain('sortBy');
+    });
+
+    test('Debe devolver 400 si sortOrder no es válido', async () => {
+        const res = await request(app).get('/weather-records?sortOrder=down');
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.message).toContain('sortOrder');
+    });
+
+    test('Debe devolver 400 si el id del registro no es válido', async () => {
+        const res = await request(app).get('/weather-records/id-invalido');
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.message).toContain('ID');
+    });
+
+    test('Debe devolver 404 si el registro no existe', async () => {
+        const res = await request(app).get(`/weather-records/${new ObjectId().toString()}`);
+
+        expect(res.statusCode).toBe(404);
+        expect(res.body.message).toContain('no encontrado');
+    });
 });
