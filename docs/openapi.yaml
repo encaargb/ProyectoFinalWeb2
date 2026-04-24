@@ -3,8 +3,10 @@ info:
   title: Sports Facilities API
   version: 1.0.0
   description: >
-    API REST para gestionar instalaciones deportivas. Actualmente el
-    recurso plenamente operativo es /installations.
+    API REST para gestionar instalaciones deportivas, deportes del sistema
+    e histórico meteorológico. La API pública documentada incluye
+    instalaciones, sports, weather-records y la consulta meteorológica
+    por instalación.
 
 servers:
   - url: http://localhost:3000
