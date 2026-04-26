@@ -10,10 +10,7 @@
     "import:osm": "node scripts/import-osm.js"
   },
   "jest": {
-    "testEnvironment": "node",
-    "testPathIgnorePatterns": [
-      "<rootDir>/cliente-web/"
-    ]
+    "testEnvironment": "node"
   },
   "repository": {
     "type": "git",

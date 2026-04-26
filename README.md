@@ -19,6 +19,30 @@ Además, el sistema se complementa con **información externa que enriquece los 
 - Jest
 - Supertest
 
+## Arquitectura
+El proyecto queda separado en dos repositorios:
+
+- API REST: este repositorio, responsable de exponer datos JSON.
+- Cliente Web: `ProyectoFinalWeb2-Cliente`, responsable de servir HTML, CSS y JavaScript del navegador.
+
+## Ejecución de la API
+```bash
+npm install
+npm run dev
+```
+
+URL local:
+
+```text
+http://localhost:3000
+```
+
+Endpoints principales:
+
+- `/installations`
+- `/sports`
+- `/weather-records`
+
 ## Importación de datos desde OSM
 La carga de instalaciones deportivas se hace con un script separado de la aplicación.
 
