@@ -20,9 +20,18 @@ describe('API General Endpoints', () => {
         const res = await request(app).get('/');
 
         expect(res.statusCode).toBe(200);
+        expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173');
         expect(res.body).toEqual({
             message: 'Sports Facilities API is running'
         });
+    });
+
+    test('OPTIONS / debe responder correctamente a la preflight de CORS', async () => {
+        const res = await request(app).options('/installations');
+
+        expect(res.statusCode).toBe(204);
+        expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+        expect(res.headers['access-control-allow-methods']).toContain('GET');
     });
 
     test('GET /sports debe estar accesible', async () => {

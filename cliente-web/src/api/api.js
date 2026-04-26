@@ -104,3 +104,28 @@ export async function fetchInstallationById(id, fetchImpl = globalThis.fetch, ba
 
   return payload.data;
 }
+
+export async function fetchInstallationWeather(id, fetchImpl = globalThis.fetch, baseUrl = API_BASE_URL) {
+  if (!id || typeof id !== 'string') {
+    throw new Error('Debes seleccionar una instalación válida.');
+  }
+
+  const response = await fetchImpl(joinUrl(baseUrl, `/installations/${encodeURIComponent(id)}/weather`), {
+    headers: {
+      Accept: 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const message = await readErrorMessage(response, 'No se pudo consultar la meteorología de la instalación.');
+    throw new Error(message);
+  }
+
+  const payload = await response.json();
+
+  if (!payload?.data || typeof payload.data !== 'object') {
+    throw new Error('La API devolvió una respuesta meteorológica inesperada.');
+  }
+
+  return payload.data;
+}

@@ -11,7 +11,8 @@ Esto implica que:
 - el código del cliente no debe mezclarse con la implementación interna de la API REST;
 - el cliente debe mantenerse en su propio proyecto, carpeta o repositorio independiente según decida el equipo;
 - sus pruebas, dependencias, configuración y documentación deben pertenecer al cliente y no al backend;
-- el cierre de iteraciones del cliente debe evaluarse sobre su propio código y su propia suite de tests.
+- el cierre de iteraciones del cliente debe evaluarse sobre su propio código y su propia suite de tests;
+- el cliente se implementará con `HTML`, `CSS` y `JavaScript vanilla`, usando `fetch` para consumir la API.
 
 ## Criterios de división
 
@@ -24,6 +25,7 @@ Las iteraciones se han dividido siguiendo estos principios:
 - las operaciones de edición y gestión se dejan para una fase posterior;
 - la meteorología y el histórico se separan para mantener commits y entregas más claros.
 - cada iteración debe incluir también sus pruebas antes de considerarse cerrada.
+- la solución técnica del cliente debe mantenerse simple y no introducir frameworks frontend innecesarios.
 
 ## Iteración 1. Base del cliente y conexión con la API
 
@@ -33,10 +35,10 @@ Crear la estructura inicial del cliente y verificar que puede comunicarse correc
 
 ### Alcance
 
-- crear el proyecto frontend;
+- crear la estructura estática del cliente;
 - crear el cliente en una ubicación separada de la API REST;
 - definir estructura básica de carpetas;
-- configurar la URL base de la API;
+- configurar la URL base de la API de forma simple y explícita;
 - crear un servicio común de acceso HTTP;
 - crear la navegación principal;
 - implementar una pantalla de inicio;
@@ -47,7 +49,9 @@ Crear la estructura inicial del cliente y verificar que puede comunicarse correc
 Al cerrar esta iteración, el repositorio ya contendrá un cliente arrancable con:
 
 - estructura base;
-- layout principal;
+- HTML principal;
+- hoja de estilos propia;
+- JavaScript principal separado por responsabilidades;
 - navegación mínima;
 - pantalla de inicio funcional;
 - primera llamada real a la API.
@@ -55,7 +59,7 @@ Al cerrar esta iteración, el repositorio ya contendrá un cliente arrancable co
 ### Tests a implementar
 
 - test del servicio HTTP o módulo de conexión con la API;
-- test del componente o vista de inicio;
+- test de la vista de inicio;
 - test del flujo de carga correcta del estado de la API;
 - test del estado de error si `GET /` falla.
 
@@ -327,3 +331,8 @@ Cada iteración del cliente se considerará cerrada cuando incluya:
 - tests del bloque implementado;
 - comprobación manual del flujo principal;
 - estado estable para poder subirlo al repositorio sin romper lo anterior.
+
+Además:
+
+- la implementación debe seguir siendo compatible con un cliente vanilla simple;
+- no se considerará obligatorio introducir herramientas de build si la iteración puede resolverse con HTML, CSS y JavaScript nativo.

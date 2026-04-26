@@ -9,6 +9,20 @@ const weatherRoutes = require('./routes/weather.routes');
 // Cargamos la documentación OpenAPI para servirla en Swagger UI.
 const swaggerDocument = YAML.load(path.join(__dirname, '..', 'docs', 'openapi.yaml'));
 const app = express();
+const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+
+// Permitimos que el cliente web independiente consuma la API desde el navegador.
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', clientOrigin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Accept');
+
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+    }
+
+    return next();
+});
 
 // Este middleware permite leer cuerpos JSON en POST, PUT y PATCH.
 app.use(express.json());

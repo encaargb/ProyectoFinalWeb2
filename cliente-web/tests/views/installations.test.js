@@ -3,7 +3,8 @@ import test from 'node:test';
 import {
   renderInstallationDetail,
   renderInstallationsList,
-  renderInstallationsSection
+  renderInstallationsSection,
+  renderInstallationWeather
 } from '../../src/views/installations.js';
 
 test('renderInstallationsSection incluye filtros, resultados y controles de paginación', () => {
@@ -63,4 +64,22 @@ test('renderInstallationDetail muestra los datos principales de la instalación'
   assert.match(html, /-3.70379, 40.41678/);
   assert.match(html, /osm/);
   assert.match(html, /tennis/);
+  assert.match(html, /Consultar meteorología/);
+  assert.match(html, /data-weather-installation-id="inst-1"/);
+});
+
+test('renderInstallationWeather muestra temperatura, condición, humedad, viento y fecha', () => {
+  const html = renderInstallationWeather({
+    temperature: 18.6,
+    condition: 'lluvia ligera',
+    humidity: 73,
+    windspeed: 4.2,
+    queryDate: '2026-04-25T14:00:00.000Z'
+  });
+
+  assert.match(html, /18,6 °C/);
+  assert.match(html, /lluvia ligera/);
+  assert.match(html, /73 %/);
+  assert.match(html, /4,2 m\/s/);
+  assert.match(html, /Meteorología actual/);
 });

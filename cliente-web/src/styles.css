@@ -270,6 +270,30 @@ dd {
   background: #f8fffd;
 }
 
+.weather-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.weather-actions .status-text {
+  margin: 0;
+}
+
+.weather-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.weather-panel h3 {
+  margin: 0;
+}
+
 .empty-state {
   margin: 0;
   padding: 16px;

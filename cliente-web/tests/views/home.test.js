@@ -70,6 +70,23 @@ test('La pantalla de instalaciones permite filtrar y abrir el detalle', async ()
     requestedUrls.push(url);
 
     if (url.includes('/installations/inst-1')) {
+      if (url.endsWith('/weather')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 'weather-1',
+              installationId: 'inst-1',
+              temperature: 23.2,
+              condition: 'cielo claro',
+              humidity: 41,
+              windspeed: 2.4,
+              queryDate: '2026-04-25T14:00:00.000Z'
+            }
+          })
+        };
+      }
+
       return {
         ok: true,
         json: async () => ({
@@ -130,4 +147,14 @@ test('La pantalla de instalaciones permite filtrar y abrir el detalle', async ()
 
   assert.match(root.querySelector('#installation-detail').textContent, /Polideportivo Norte/);
   assert.match(root.querySelector('#installation-detail').textContent, /manual/);
+
+  root.querySelector('[data-weather-installation-id="inst-1"]').click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.match(root.querySelector('#installation-weather-result').textContent, /cielo claro/);
+  assert.match(root.querySelector('#installation-weather-result').textContent, /23,2 °C/);
+  assert.equal(
+    requestedUrls.some((url) => url.endsWith('/installations/inst-1/weather')),
+    true
+  );
 });

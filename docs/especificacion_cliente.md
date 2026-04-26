@@ -38,14 +38,27 @@ No incluye en esta fase:
 
 ## 4. Tipo de cliente propuesto
 
-Se propone desarrollar un cliente web que funcione como aplicación de consumo de API.
+Se propone desarrollar un cliente web sencillo en `HTML + CSS + JavaScript vanilla`, orientado exclusivamente al consumo de la API REST.
 
 Razones:
 
 - encaja con la temática de la asignatura;
 - permite demostrar consumo HTTP real de la API REST;
-- facilita probar filtros, formularios, listados y detalle de recursos;
-- es la forma más directa de reutilizar OpenAPI como contrato.
+- reduce complejidad innecesaria en esta fase;
+- evita depender de frameworks frontend cuando el objetivo principal es consumir la API;
+- facilita probar filtros, formularios, listados y detalle de recursos.
+
+### 4.1. Decisión técnica
+
+El cliente no necesita framework frontend para cumplir sus objetivos iniciales.
+
+Por tanto:
+
+- se implementará con JavaScript vanilla;
+- las peticiones HTTP se realizarán con `fetch`;
+- la interfaz podrá organizarse en varios ficheros JS separados por responsabilidad;
+- no es obligatorio usar herramientas de build del estilo `Vite`, `Webpack` o similares para el cliente;
+- la complejidad debe mantenerse baja y proporcional al alcance del proyecto.
 
 ## 5. Funcionalidades mínimas
 
@@ -186,14 +199,12 @@ La interfaz debe presentar el `message` recibido por la API de forma comprensibl
 
 La implementación del cliente puede realizarse con la tecnología frontend que el equipo decida, pero se recomienda:
 
+- cliente estático basado en `HTML`, `CSS` y `JavaScript vanilla`;
 - separación entre capa de vista y capa de acceso HTTP;
 - módulo o servicio único para llamadas a la API;
-- uso de variables de entorno para la URL base del backend;
-- componentes reutilizables para:
-  - tablas;
-  - formularios;
-  - mensajes de error;
-  - paginación.
+- configuración simple y explícita de la URL base del backend;
+- organización por ficheros o módulos pequeños;
+- reutilización básica de funciones de renderizado y manejo de errores cuando sea útil.
 
 ## 11. Resultado esperado
 

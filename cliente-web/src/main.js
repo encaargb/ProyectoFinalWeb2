@@ -1,6 +1,15 @@
-import { fetchApiStatus, fetchInstallationById, fetchInstallations } from './api/api.js';
+import {
+  fetchApiStatus,
+  fetchInstallationById,
+  fetchInstallations,
+  fetchInstallationWeather
+} from './api/api.js';
 import { renderHomePage } from './views/home.js';
-import { renderInstallationDetail, renderInstallationsList } from './views/installations.js';
+import {
+  renderInstallationDetail,
+  renderInstallationsList,
+  renderInstallationWeather
+} from './views/installations.js';
 
 function getFormValues(formElement) {
   const FormDataConstructor = formElement.ownerDocument.defaultView.FormData;
@@ -74,9 +83,34 @@ function setupInstallations(rootElement, dependencies) {
     try {
       const installation = await fetchInstallationById(id, fetchImpl);
       detailNode.innerHTML = renderInstallationDetail(installation);
+      detailNode.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setStatus(statusNode, 'Detalle cargado correctamente.', 'is-success');
     } catch (error) {
       setStatus(statusNode, error.message, 'is-error');
+    }
+  }
+
+  async function loadInstallationWeather(id) {
+    const weatherStatusNode = detailNode.querySelector('#installation-weather-status');
+    const weatherResultNode = detailNode.querySelector('#installation-weather-result');
+    const weatherButton = detailNode.querySelector('[data-weather-installation-id]');
+
+    if (!weatherStatusNode || !weatherResultNode || !weatherButton) {
+      return;
+    }
+
+    setStatus(weatherStatusNode, 'Consultando meteorología...', '');
+    weatherResultNode.innerHTML = '';
+    weatherButton.disabled = true;
+
+    try {
+      const weatherRecord = await fetchInstallationWeather(id, fetchImpl);
+      weatherResultNode.innerHTML = renderInstallationWeather(weatherRecord);
+      setStatus(weatherStatusNode, 'Meteorología cargada correctamente.', 'is-success');
+    } catch (error) {
+      setStatus(weatherStatusNode, error.message, 'is-error');
+    } finally {
+      weatherButton.disabled = false;
     }
   }
 
@@ -124,6 +158,12 @@ function setupInstallations(rootElement, dependencies) {
   });
 
   detailNode.addEventListener('click', (event) => {
+    const weatherButton = event.target.closest('[data-weather-installation-id]');
+    if (weatherButton) {
+      loadInstallationWeather(weatherButton.dataset.weatherInstallationId);
+      return;
+    }
+
     if (event.target.closest('#installation-detail-close')) {
       detailNode.innerHTML = '';
       setStatus(statusNode, 'Listado de instalaciones disponible.', 'is-success');

@@ -51,6 +51,18 @@ function renderCoordinates(location) {
   return coordinates.map((coordinate) => Number(coordinate).toFixed(5)).join(', ');
 }
 
+function formatNumber(value, suffix = '') {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return 'Sin informar';
+  }
+
+  return `${new Intl.NumberFormat('es-ES', {
+    maximumFractionDigits: 1
+  }).format(number)}${suffix}`;
+}
+
 export function renderInstallationsSection() {
   return `
     <section class="panel panel-wide" id="instalaciones">
@@ -94,8 +106,8 @@ export function renderInstallationsSection() {
       </form>
 
       <p class="status-text" id="installations-status">Cargando instalaciones...</p>
-      <div id="installations-results"></div>
       <div id="installation-detail"></div>
+      <div id="installations-results"></div>
 
       <div class="pagination" aria-label="Paginación de instalaciones">
         <button type="button" id="installations-prev">Anterior</button>
@@ -178,6 +190,48 @@ export function renderInstallationDetail(installation) {
         <h3>Deportes asociados</h3>
         <div class="tags">${renderSports(installation.sports)}</div>
       </div>
+
+      <div class="weather-actions">
+        <button type="button" data-weather-installation-id="${escapeHtml(installation.id)}">
+          Consultar meteorología
+        </button>
+        <p class="status-text" id="installation-weather-status"></p>
+      </div>
+      <div id="installation-weather-result"></div>
+    </section>
+  `;
+}
+
+export function renderInstallationWeather(weatherRecord) {
+  if (!weatherRecord) {
+    return '';
+  }
+
+  return `
+    <section class="weather-panel" aria-live="polite">
+      <h3>Meteorología actual</h3>
+      <dl class="detail-grid">
+        <div>
+          <dt>Temperatura</dt>
+          <dd>${formatNumber(weatherRecord.temperature, ' °C')}</dd>
+        </div>
+        <div>
+          <dt>Condición</dt>
+          <dd>${formatText(weatherRecord.condition)}</dd>
+        </div>
+        <div>
+          <dt>Humedad</dt>
+          <dd>${formatNumber(weatherRecord.humidity, ' %')}</dd>
+        </div>
+        <div>
+          <dt>Viento</dt>
+          <dd>${formatNumber(weatherRecord.windspeed, ' m/s')}</dd>
+        </div>
+        <div>
+          <dt>Fecha de consulta</dt>
+          <dd>${formatDate(weatherRecord.queryDate)}</dd>
+        </div>
+      </dl>
     </section>
   `;
 }
