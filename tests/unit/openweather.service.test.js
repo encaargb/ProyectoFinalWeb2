@@ -33,21 +33,22 @@ describe('OpenWeather service', () => {
         });
     });
 
-    test('buildCurrentWeatherUrl construye la URL con métricas y español', () => {
+    test('buildCurrentWeatherUrl construye la URL de Current Weather API 2.5 con métricas y español', () => {
         const url = buildCurrentWeatherUrl({
             lat: 40.3,
             lon: -3.7,
             config: getWeatherConfig()
         });
 
-        expect(url).toContain('/weather?');
+        expect(url).toContain('/data/2.5/weather?');
         expect(url).toContain('lat=40.3');
         expect(url).toContain('lon=-3.7');
         expect(url).toContain('units=metric');
         expect(url).toContain('lang=es');
+        expect(url).not.toContain('exclude=');
     });
 
-    test('normalizeOpenWeatherPayload adapta la respuesta del proveedor', () => {
+    test('normalizeOpenWeatherPayload adapta la respuesta Current Weather API 2.5 del proveedor', () => {
         const queryDate = new Date('2026-04-22T10:00:00.000Z');
         const result = normalizeOpenWeatherPayload({
             main: { temp: 21, humidity: 40 },

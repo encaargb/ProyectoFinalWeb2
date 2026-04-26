@@ -44,12 +44,15 @@ function getWeatherConfig() {
 
 // Construimos la URL final del proveedor con coordenadas y configuración acordada.
 function buildCurrentWeatherUrl({ lat, lon, config }) {
-    const url = new URL('/weather', config.baseUrl);
+    const baseUrl = config.baseUrl.replace(/\/+$/, '');
+    const url = new URL(`${baseUrl}/weather`);
+
     url.searchParams.set('lat', String(lat));
     url.searchParams.set('lon', String(lon));
     url.searchParams.set('appid', config.apiKey);
     url.searchParams.set('units', 'metric');
     url.searchParams.set('lang', 'es');
+
     return url.toString();
 }
 
