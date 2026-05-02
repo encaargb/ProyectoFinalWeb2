@@ -1,6 +1,7 @@
 const {
     attachSportsCatalogIdsToInstallations,
     buildOverpassQuery,
+    cleanupStaleInstallationsForMunicipality,
     extractSportsCatalogFromInstallations,
     fetchOsmElements,
     fetchOsmElementsWithFallback,
@@ -152,6 +153,55 @@ describe('OSM import service', () => {
         });
     });
 
+    test('cleanupStaleInstallationsForMunicipality borra instalaciones antiguas del municipio y su weather', async () => {
+        const installationsToArray = jest.fn().mockResolvedValue([
+            { _id: 'old-installation-1' },
+            { _id: 'old-installation-2' }
+        ]);
+        const installationsFind = jest.fn().mockReturnValue({ toArray: installationsToArray });
+        const installationsDeleteMany = jest.fn().mockResolvedValue({ deletedCount: 2 });
+        const weatherDeleteMany = jest.fn().mockResolvedValue({ deletedCount: 3 });
+        const db = {
+            collection: jest.fn((name) => {
+                if (name === 'installations') {
+                    return {
+                        find: installationsFind,
+                        deleteMany: installationsDeleteMany
+                    };
+                }
+
+                return {
+                    deleteMany: weatherDeleteMany
+                };
+            })
+        };
+
+        const result = await cleanupStaleInstallationsForMunicipality({
+            db,
+            municipality: 'Getafe',
+            externalIdsToKeep: ['node/1', 'way/2']
+        });
+
+        expect(installationsFind).toHaveBeenCalledWith(
+            {
+                city: 'Getafe',
+                source: 'OpenStreetMap',
+                externalId: { $nin: ['node/1', 'way/2'] }
+            },
+            { projection: { _id: 1 } }
+        );
+        expect(installationsDeleteMany).toHaveBeenCalledWith({
+            _id: { $in: ['old-installation-1', 'old-installation-2'] }
+        });
+        expect(weatherDeleteMany).toHaveBeenCalledWith({
+            installationId: { $in: ['old-installation-1', 'old-installation-2'] }
+        });
+        expect(result).toEqual({
+            removedInstallations: 2,
+            removedWeatherRecords: 3
+        });
+    });
+
     test('extractSportsCatalogFromInstallations deduplica deportes por osmKey', () => {
         const sports = extractSportsCatalogFromInstallations([
             {
@@ -280,6 +330,10 @@ describe('OSM import service', () => {
             upsertedCount: 1,
             modifiedCount: 0
         });
+        const installationsFind = jest.fn().mockReturnValue({
+            toArray: jest.fn().mockResolvedValue([])
+        });
+        const installationsDeleteMany = jest.fn().mockResolvedValue({ deletedCount: 0 });
         const sportsBulkWrite = jest.fn().mockResolvedValue({
             upsertedCount: 1,
             modifiedCount: 0
@@ -290,13 +344,22 @@ describe('OSM import service', () => {
                 { _id: sportId, name: 'basketball', osmKey: 'basketball' }
             ])
         });
+        const weatherDeleteMany = jest.fn().mockResolvedValue({ deletedCount: 0 });
         const db = {
             collection: jest.fn((name) => {
                 if (name === 'sports') {
                     return { bulkWrite: sportsBulkWrite, find: sportsFind };
                 }
 
-                return { bulkWrite: installationsBulkWrite };
+                if (name === 'weather-records') {
+                    return { deleteMany: weatherDeleteMany };
+                }
+
+                return {
+                    bulkWrite: installationsBulkWrite,
+                    find: installationsFind,
+                    deleteMany: installationsDeleteMany
+                };
             })
         };
         const onProgress = jest.fn();
@@ -310,6 +373,14 @@ describe('OSM import service', () => {
         });
 
         expect(fetchImpl).toHaveBeenCalled();
+        expect(installationsFind).toHaveBeenCalledWith(
+            {
+                city: 'Getafe',
+                source: 'OpenStreetMap',
+                externalId: { $nin: ['node/5'] }
+            },
+            { projection: { _id: 1 } }
+        );
         expect(sportsBulkWrite).toHaveBeenCalled();
         expect(installationsBulkWrite).toHaveBeenCalled();
         expect(installationsBulkWrite.mock.calls[0][0][0].updateOne.update.$set.sports).toEqual([
@@ -324,6 +395,10 @@ describe('OSM import service', () => {
                 received: 1,
                 inserted: 1,
                 updated: 0
+            },
+            cleanup: {
+                removedInstallations: 0,
+                removedWeatherRecords: 0
             },
             received: 1,
             inserted: 1,

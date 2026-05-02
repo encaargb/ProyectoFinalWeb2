@@ -18,6 +18,7 @@ La API se encuentra en una fase avanzada:
 - `weather-records` ya permite consulta con filtros, paginación y ordenación.
 - `GET /installations/{id}/weather` ya resuelve meteorología bajo demanda y persiste histórico.
 - el importador OSM ya carga instalaciones y catálogo de deportes, enlazando `installations.sports` con `sportId + name` cuando existe deporte de catálogo.
+- el importador OSM ya limpia instalaciones obsoletas del municipio importado y sus registros meteorológicos asociados.
 - la documentación OpenAPI ya recoge los recursos públicos principales.
 
 Por tanto, las siguientes iteraciones deben centrarse en cerrar huecos concretos y revisar coherencia global, no en reconstruir recursos desde cero.
@@ -404,14 +405,13 @@ En curso. El importador OSM ya se ha alineado parcialmente con el modelo final.
 
 1. Iteración 4: búsqueda avanzada en `installations`
 2. Iteración 5: cierre transversal
-3. Iteración 6: revisión de recarga de datos y mantenimiento
 
 ## Motivo de este orden actual
 
 - `sports`, `weather-records` y meteorología bajo demanda ya están operativos.
+- la recarga de datos ya tiene limpieza de instalaciones obsoletas y weather huérfano.
 - la búsqueda avanzada mejora directamente la experiencia del cliente.
 - el cierre transversal debe hacerse cuando estén estables los recursos principales.
-- la recarga de datos necesita revisarse después de tener claro cómo se relacionan instalaciones, deportes y registros meteorológicos.
 
 ## Iteración 6. Recarga de datos y mantenimiento
 
@@ -422,23 +422,26 @@ Cerrar el flujo de mantenimiento de datos cuando se vacía o recarga la base de 
 ### Alcance
 
 - documentar claramente cómo vaciar `installations`, `sports` y `weather-records`;
-- revisar si el importador elimina instalaciones anteriores del municipio antes de insertar la nueva carga;
-- revisar qué ocurre con registros meteorológicos huérfanos tras una recarga;
-- preparar, si procede, un script de limpieza o recarga controlada;
+- eliminar instalaciones OSM antiguas del municipio que ya no aparezcan en la nueva carga;
+- eliminar registros meteorológicos asociados a instalaciones eliminadas;
 - documentar el flujo recomendado para entorno local y de pruebas.
 
-### Tests a implementar o reforzar
+### Tests implementados o reforzados
 
 - tests del importador cuando ya existen instalaciones del mismo municipio;
 - tests de creación del catálogo `sports` durante importación;
 - tests de enlace `sportId + name`;
-- tests de limpieza de datos huérfanos si se implementa esa limpieza.
+- tests de limpieza de instalaciones obsoletas y registros meteorológicos asociados.
 
 ### Resultado esperado
 
 - recarga de datos repetible y documentada;
 - menor riesgo de duplicados o referencias huérfanas;
 - flujo claro para vaciar y volver a importar datos.
+
+### Estado
+
+Completada.
 
 ## Criterio de cierre por iteración
 

@@ -37,7 +37,9 @@ La API ya expone los recursos principales del proyecto:
 
 El importador OSM carga instalaciones deportivas y, además, crea o actualiza el catálogo `sports` a partir de la información disponible en OSM. Cuando puede enlazar una instalación con un deporte del catálogo, guarda la referencia como `sportId + name` dentro de `installations.sports`.
 
-Las siguientes iteraciones previstas se centran en cerrar detalles transversales: búsqueda textual avanzada en instalaciones, revisión de índices, limpieza final de OpenAPI, revisión de mensajes y validación de recarga de datos.
+La recarga por municipio reconstruye las instalaciones procedentes de OpenStreetMap: mantiene o actualiza las instalaciones que siguen apareciendo en la nueva carga y elimina las instalaciones antiguas de ese municipio que ya no aparecen. Si elimina instalaciones, también borra sus registros asociados en `weather-records` para evitar histórico huérfano.
+
+Las siguientes iteraciones previstas se centran en cerrar detalles transversales: búsqueda textual avanzada en instalaciones, revisión de índices, limpieza final de OpenAPI y revisión de mensajes.
 
 ## Ejecución de la API
 ```bash
@@ -64,7 +66,9 @@ El importador carga:
 
 - instalaciones deportivas en `installations`;
 - deportes detectados en el tag OSM `sport` dentro del catálogo `sports`;
-- referencias `sportId` en los deportes asociados a cada instalación cuando el catálogo queda enlazado.
+- referencias `sportId` en los deportes asociados a cada instalación cuando el catálogo queda enlazado;
+- limpieza de instalaciones OSM obsoletas del municipio importado;
+- limpieza de `weather-records` asociados a instalaciones eliminadas durante la recarga.
 
 Ejemplo con `npm`:
 ```bash

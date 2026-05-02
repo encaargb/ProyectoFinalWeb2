@@ -262,6 +262,62 @@ async function upsertInstallationsFromService({ db, installations }) {
     };
 }
 
+async function cleanupStaleInstallationsForMunicipality({
+    db,
+    municipality,
+    source = OSM_SOURCE,
+    externalIdsToKeep = []
+}) {
+    if (!db) {
+        throw new Error('Se necesita una conexión de base de datos para limpiar instalaciones');
+    }
+
+    if (!municipality || typeof municipality !== 'string' || municipality.trim().length === 0) {
+        throw new Error('municipality es obligatorio para limpiar instalaciones');
+    }
+
+    if (!Array.isArray(externalIdsToKeep)) {
+        throw new Error('externalIdsToKeep debe ser un array');
+    }
+
+    const installationsCollection = db.collection('installations');
+    const weatherRecordsCollection = db.collection('weather-records');
+    const normalizedExternalIds = externalIdsToKeep
+        .filter((externalId) => typeof externalId === 'string' && externalId.trim().length > 0);
+    const staleFilter = {
+        city: municipality.trim(),
+        source
+    };
+
+    if (normalizedExternalIds.length > 0) {
+        staleFilter.externalId = { $nin: normalizedExternalIds };
+    }
+
+    const staleInstallations = await installationsCollection
+        .find(staleFilter, { projection: { _id: 1 } })
+        .toArray();
+    const staleInstallationIds = staleInstallations.map((installation) => installation._id);
+
+    if (staleInstallationIds.length === 0) {
+        return {
+            removedInstallations: 0,
+            removedWeatherRecords: 0
+        };
+    }
+
+    const installationsDeleteResult = await installationsCollection.deleteMany({
+        _id: { $in: staleInstallationIds }
+    });
+    const weatherDeleteResult = await weatherRecordsCollection.deleteMany({
+        installationId: { $in: staleInstallationIds }
+    });
+
+    return {
+        removedInstallations: installationsDeleteResult.deletedCount || 0,
+        removedWeatherRecords: weatherDeleteResult.deletedCount || 0
+    };
+}
+
 function extractSportsCatalogFromInstallations(installations) {
     const sportsByOsmKey = new Map();
 
@@ -375,6 +431,12 @@ async function importInstallationsFromOsm({
     onProgress(`OSM ha devuelto ${elements.length} elementos crudos`);
     const installations = transformOverpassElements(elements, { municipality, importedAt });
     onProgress(`Se han transformado ${installations.length} instalaciones válidas`);
+    const cleanup = await cleanupStaleInstallationsForMunicipality({
+        db,
+        municipality,
+        externalIdsToKeep: installations.map((installation) => installation.externalId)
+    });
+    onProgress(`MongoDB limpieza: ${cleanup.removedInstallations} instalaciones y ${cleanup.removedWeatherRecords} registros meteorológicos eliminados`);
     const sportsCatalog = extractSportsCatalogFromInstallations(installations);
     const sportsPersistence = await upsertSportsCatalogFromService({ db, sports: sportsCatalog });
     onProgress(`MongoDB sports: ${sportsPersistence.inserted} insertados, ${sportsPersistence.updated} actualizados`);
@@ -391,6 +453,7 @@ async function importInstallationsFromOsm({
             inserted: sportsPersistence.inserted,
             updated: sportsPersistence.updated
         },
+        cleanup,
         ...persistence
     };
 }
@@ -402,6 +465,7 @@ module.exports = {
     OSM_SOURCE,
     attachSportsCatalogIdsToInstallations,
     buildOverpassQuery,
+    cleanupStaleInstallationsForMunicipality,
     extractSportsCatalogFromInstallations,
     fetchOsmElements,
     fetchOsmElementsWithFallback,

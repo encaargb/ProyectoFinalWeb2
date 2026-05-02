@@ -32,11 +32,11 @@ La implementación actual ya cubre la mayor parte del contrato definido:
 - `GET /installations/{id}/weather` consulta OpenWeather bajo demanda, reutiliza registros vigentes y persiste nuevos registros cuando corresponde.
 - `docs/openapi.yaml` documenta los recursos públicos aprobados.
 - el importador OSM carga instalaciones y también crea o actualiza deportes del catálogo a partir del tag `sport`.
+- la recarga OSM por municipio elimina instalaciones obsoletas de ese municipio y sus registros meteorológicos asociados.
 
 Quedan como líneas principales de trabajo:
 
 - completar o revisar búsqueda textual avanzada `q` en `GET /installations`;
-- revisar la política de recarga completa por municipio y eliminación de registros huérfanos;
 - preparar un script o flujo específico para revisar deportes incompletos;
 - revisar índices, mensajes, ejemplos OpenAPI y coherencia final entre API y cliente.
 
@@ -152,7 +152,8 @@ Contrato funcional:
 Cuando se relanza una carga de una localidad ya existente:
 
 - se reemplazan las instalaciones de ese municipio;
-- deben eliminarse los registros huérfanos asociados a instalaciones ya inexistentes en base de datos.
+- se eliminan las instalaciones OSM de ese municipio que ya no aparecen en la nueva carga;
+- se eliminan los registros de `weather-records` asociados a las instalaciones eliminadas.
 
 ### 5.3. Deportes detectados durante la carga
 
@@ -344,7 +345,6 @@ Regla funcional:
 La siguiente fase del proyecto consistirá en:
 
 - cerrar la búsqueda textual avanzada `q` en instalaciones si falta algún ajuste;
-- reforzar la recarga por municipio y la eliminación de datos huérfanos;
 - crear o documentar el flujo de revisión de deportes incompletos;
 - revisar índices de MongoDB;
 - hacer una revisión final de OpenAPI, README, tests y mensajes de error.
