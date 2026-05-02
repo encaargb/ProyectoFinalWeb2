@@ -21,6 +21,25 @@ El sistema no incluye:
 - Frontend dentro de este repositorio.
 - Automatismos programados de actualización periódica.
 
+## 2.1. Situación actual del proyecto
+
+La implementación actual ya cubre la mayor parte del contrato definido:
+
+- `installations` permite listado, detalle, creación, actualización y borrado.
+- `installations` guarda deportes asociados como objetos con `sportId` y `name`.
+- `sports` funciona como catálogo global con CRUD completo y filtro `missingMetadata=true`.
+- `weather-records` permite consulta de histórico con filtros, paginación y ordenación.
+- `GET /installations/{id}/weather` consulta OpenWeather bajo demanda, reutiliza registros vigentes y persiste nuevos registros cuando corresponde.
+- `docs/openapi.yaml` documenta los recursos públicos aprobados.
+- el importador OSM carga instalaciones y también crea o actualiza deportes del catálogo a partir del tag `sport`.
+
+Quedan como líneas principales de trabajo:
+
+- completar o revisar búsqueda textual avanzada `q` en `GET /installations`;
+- revisar la política de recarga completa por municipio y eliminación de registros huérfanos;
+- preparar un script o flujo específico para revisar deportes incompletos;
+- revisar índices, mensajes, ejemplos OpenAPI y coherencia final entre API y cliente.
+
 ## 3. Reglas generales del sistema
 
 - La API pública responde en español.
@@ -53,7 +72,7 @@ Reglas:
   - `name` obligatorio.
   - `osmKey` si existe en OSM.
   - `category = null`.
-  - `environment = null`.
+  - `environment = null` cuando no pueda inferirse desde OSM.
 - Existirá un script manual específico para completar deportes incompletos.
 - La identificación funcional para revisar/completar deportes pendientes será `name + osmKey`, con el objetivo de evitar repeticiones por nombre.
 - La API pública permitirá gestionar deportes completos mediante operaciones CRUD.
@@ -141,7 +160,8 @@ Cuando una instalación cargada desde OSM contiene deportes detectados:
 
 - si el deporte ya existe, se enlaza en `installations.sports` mediante `sportId + name`;
 - si el deporte no existe, se crea automáticamente en `sports`;
-- si faltan `category` o `environment`, dichos campos quedan a `null` hasta revisión manual.
+- `category` queda pendiente de revisión manual cuando OSM no aporta una clasificación suficiente;
+- `environment` puede inferirse como `indoor` u `outdoor` si OSM contiene información suficiente; si no, queda a `null`.
 
 ### 5.4. Script de revisión de deportes incompletos
 
@@ -323,6 +343,8 @@ Regla funcional:
 
 La siguiente fase del proyecto consistirá en:
 
-- adaptar la implementación al contrato aquí definido;
-- adaptar la suite de tests al mismo contrato;
-- retirar del código las partes que no encajen con esta especificación.
+- cerrar la búsqueda textual avanzada `q` en instalaciones si falta algún ajuste;
+- reforzar la recarga por municipio y la eliminación de datos huérfanos;
+- crear o documentar el flujo de revisión de deportes incompletos;
+- revisar índices de MongoDB;
+- hacer una revisión final de OpenAPI, README, tests y mensajes de error.

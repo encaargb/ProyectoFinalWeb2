@@ -10,6 +10,18 @@ Incluye:
 - cambios de tests;
 - resultado esperado al cerrar cada fase.
 
+## Estado actual
+
+La API se encuentra en una fase avanzada:
+
+- `sports` ya está implementado como recurso CRUD.
+- `weather-records` ya permite consulta con filtros, paginación y ordenación.
+- `GET /installations/{id}/weather` ya resuelve meteorología bajo demanda y persiste histórico.
+- el importador OSM ya carga instalaciones y catálogo de deportes, enlazando `installations.sports` con `sportId + name` cuando existe deporte de catálogo.
+- la documentación OpenAPI ya recoge los recursos públicos principales.
+
+Por tanto, las siguientes iteraciones deben centrarse en cerrar huecos concretos y revisar coherencia global, no en reconstruir recursos desde cero.
+
 ## Iteración 1. Completar `sports` como recurso real
 
 ### Objetivo
@@ -74,6 +86,10 @@ Añadir y documentar:
 
 - `sports` deja de ser un endpoint placeholder
 - el recurso queda completamente alineado con la especificación
+
+### Estado
+
+Completada.
 
 ---
 
@@ -156,6 +172,10 @@ Añadir y documentar:
 - `weather-records` pasa a ser un recurso útil de consulta
 - la API puede explotar el histórico meteorológico de forma ordenada
 
+### Estado
+
+Completada.
+
 ---
 
 ## Iteración 3. Meteorología bajo demanda por instalación
@@ -231,6 +251,10 @@ Implementar `GET /installations/{id}/weather` con caché temporal, consulta a Op
 
 - la API podrá resolver y persistir meteorología bajo demanda por instalación
 - `weather-records` pasará a ser además el histórico real generado por la integración externa
+
+### Estado
+
+Completada.
 
 ---
 
@@ -308,6 +332,10 @@ Documentar:
 - las búsquedas de instalaciones serán más naturales para el usuario
 - el endpoint de listado ganará expresividad sin romper el contrato actual
 
+### Estado
+
+Pendiente de revisar e implementar si todavía no está cerrado en código.
+
 ---
 
 ## Iteración 5. Cierre transversal y alineación global
@@ -327,10 +355,13 @@ Revisar la coherencia global del proyecto después de las iteraciones funcionale
 
 ### Revisión del importador
 
-Se revisará especialmente:
+Ya se ha avanzado en:
 
-- creación y enlace de `sports`
-- persistencia de `sportId + name` en `installations.sports`
+- creación y enlace de `sports`;
+- persistencia de `sportId + name` en `installations.sports`.
+
+Queda por revisar especialmente:
+
 - alineación con la política de recarga por municipio
 
 ### Mejoras técnicas recomendadas
@@ -363,23 +394,51 @@ Revisar y, si procede, definir índices MongoDB sobre:
 - API coherente en todos sus recursos
 - base estable para continuar con nuevas funcionalidades
 
+### Estado
+
+En curso. El importador OSM ya se ha alineado parcialmente con el modelo final.
+
 ---
 
 ## Orden recomendado de ejecución
 
-1. Iteración 1: `sports`
-2. Iteración 2: `weather-records`
-3. Iteración 3: meteorología bajo demanda por instalación
-4. Iteración 4: búsqueda avanzada en `installations`
-5. Iteración 5: cierre transversal
+1. Iteración 4: búsqueda avanzada en `installations`
+2. Iteración 5: cierre transversal
+3. Iteración 6: revisión de recarga de datos y mantenimiento
 
-## Motivo de este orden
+## Motivo de este orden actual
 
-- `sports` completa primero un recurso base del dominio
-- `weather-records` completa el histórico meteorológico como recurso de consulta
-- la meteorología bajo demanda aprovecha el histórico ya construido en `weather-records`
-- `installations` se amplía después con búsqueda avanzada
-- el cierre transversal evita rehacer documentación y tests varias veces
+- `sports`, `weather-records` y meteorología bajo demanda ya están operativos.
+- la búsqueda avanzada mejora directamente la experiencia del cliente.
+- el cierre transversal debe hacerse cuando estén estables los recursos principales.
+- la recarga de datos necesita revisarse después de tener claro cómo se relacionan instalaciones, deportes y registros meteorológicos.
+
+## Iteración 6. Recarga de datos y mantenimiento
+
+### Objetivo
+
+Cerrar el flujo de mantenimiento de datos cuando se vacía o recarga la base de datos.
+
+### Alcance
+
+- documentar claramente cómo vaciar `installations`, `sports` y `weather-records`;
+- revisar si el importador elimina instalaciones anteriores del municipio antes de insertar la nueva carga;
+- revisar qué ocurre con registros meteorológicos huérfanos tras una recarga;
+- preparar, si procede, un script de limpieza o recarga controlada;
+- documentar el flujo recomendado para entorno local y de pruebas.
+
+### Tests a implementar o reforzar
+
+- tests del importador cuando ya existen instalaciones del mismo municipio;
+- tests de creación del catálogo `sports` durante importación;
+- tests de enlace `sportId + name`;
+- tests de limpieza de datos huérfanos si se implementa esa limpieza.
+
+### Resultado esperado
+
+- recarga de datos repetible y documentada;
+- menor riesgo de duplicados o referencias huérfanas;
+- flujo claro para vaciar y volver a importar datos.
 
 ## Criterio de cierre por iteración
 

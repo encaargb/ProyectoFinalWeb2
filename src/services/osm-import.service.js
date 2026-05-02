@@ -59,6 +59,27 @@ function normalizeSports(tags = {}) {
     return uniqueNames.map((name) => ({ name }));
 }
 
+function inferSportEnvironment(tags = {}) {
+    if (tags.indoor === 'yes') {
+        return 'indoor';
+    }
+
+    if (tags.indoor === 'no' || tags.leisure === 'pitch' || tags.leisure === 'track' || tags.leisure === 'stadium') {
+        return 'outdoor';
+    }
+
+    return null;
+}
+
+function normalizeSportsCatalogFromTags(tags = {}) {
+    return normalizeSports(tags).map((sport) => ({
+        name: sport.name,
+        osmKey: sport.name,
+        category: null,
+        environment: inferSportEnvironment(tags)
+    }));
+}
+
 function inferInstallationType(tags = {}) {
     // Elegimos el tag más representativo disponible para clasificar la instalación.
     return tags.leisure || tags.amenity || tags.building || 'sports_facility';
@@ -87,7 +108,7 @@ function transformOsmElementToInstallation(element, options = {}) {
         name: inferInstallationName(element, municipality),
         type: inferInstallationType(element.tags || {}),
         city: municipality,
-        sports: normalizeSports(element.tags || {}),
+        sports: normalizeSportsCatalogFromTags(element.tags || {}),
         location: {
             type: 'Point',
             coordinates
@@ -241,6 +262,99 @@ async function upsertInstallationsFromService({ db, installations }) {
     };
 }
 
+function extractSportsCatalogFromInstallations(installations) {
+    const sportsByOsmKey = new Map();
+
+    for (const installation of installations) {
+        for (const sport of installation.sports || []) {
+            const osmKey = sport.osmKey || sport.name;
+
+            if (!osmKey || sportsByOsmKey.has(osmKey)) {
+                continue;
+            }
+
+            sportsByOsmKey.set(osmKey, {
+                name: sport.name,
+                osmKey,
+                category: sport.category ?? null,
+                environment: sport.environment ?? null
+            });
+        }
+    }
+
+    return [...sportsByOsmKey.values()];
+}
+
+async function upsertSportsCatalogFromService({ db, sports }) {
+    if (!db) {
+        throw new Error('Se necesita una conexión de base de datos para importar deportes');
+    }
+
+    if (!Array.isArray(sports)) {
+        throw new Error('sports debe ser un array');
+    }
+
+    if (sports.length === 0) {
+        return {
+            received: 0,
+            inserted: 0,
+            updated: 0,
+            byOsmKey: new Map()
+        };
+    }
+
+    const collection = db.collection('sports');
+    const now = new Date();
+    const operations = sports.map((sport) => ({
+        updateOne: {
+            filter: {
+                osmKey: sport.osmKey
+            },
+            update: {
+                $set: {
+                    updatedAt: now
+                },
+                $setOnInsert: {
+                    name: sport.name,
+                    osmKey: sport.osmKey,
+                    category: sport.category ?? null,
+                    environment: sport.environment ?? null,
+                    createdAt: now
+                }
+            },
+            upsert: true
+        }
+    }));
+
+    const result = await collection.bulkWrite(operations, { ordered: false });
+    const persistedSports = await collection
+        .find({ osmKey: { $in: sports.map((sport) => sport.osmKey) } })
+        .toArray();
+    const byOsmKey = new Map(persistedSports.map((sport) => [sport.osmKey, sport]));
+
+    return {
+        received: sports.length,
+        inserted: result.upsertedCount,
+        updated: result.modifiedCount,
+        byOsmKey
+    };
+}
+
+function attachSportsCatalogIdsToInstallations(installations, sportsByOsmKey) {
+    return installations.map((installation) => ({
+        ...installation,
+        sports: (installation.sports || []).map((sport) => {
+            const catalogSport = sportsByOsmKey.get(sport.osmKey || sport.name);
+            const sportId = catalogSport?._id?.toString?.();
+
+            return {
+                name: sport.name,
+                ...(sportId ? { sportId } : {})
+            };
+        })
+    }));
+}
+
 async function importInstallationsFromOsm({
     db,
     municipality,
@@ -261,13 +375,22 @@ async function importInstallationsFromOsm({
     onProgress(`OSM ha devuelto ${elements.length} elementos crudos`);
     const installations = transformOverpassElements(elements, { municipality, importedAt });
     onProgress(`Se han transformado ${installations.length} instalaciones válidas`);
-    const persistence = await upsertInstallationsFromService({ db, installations });
+    const sportsCatalog = extractSportsCatalogFromInstallations(installations);
+    const sportsPersistence = await upsertSportsCatalogFromService({ db, sports: sportsCatalog });
+    onProgress(`MongoDB sports: ${sportsPersistence.inserted} insertados, ${sportsPersistence.updated} actualizados`);
+    const installationsWithSportIds = attachSportsCatalogIdsToInstallations(installations, sportsPersistence.byOsmKey);
+    const persistence = await upsertInstallationsFromService({ db, installations: installationsWithSportIds });
     onProgress(`MongoDB: ${persistence.inserted} insertadas, ${persistence.updated} actualizadas`);
 
     return {
         municipality,
         fetched: elements.length,
         imported: installations.length,
+        sportsCatalog: {
+            received: sportsPersistence.received,
+            inserted: sportsPersistence.inserted,
+            updated: sportsPersistence.updated
+        },
         ...persistence
     };
 }
@@ -277,14 +400,19 @@ module.exports = {
     DEFAULT_OVERPASS_TIMEOUT_MS,
     FALLBACK_OVERPASS_URLS,
     OSM_SOURCE,
+    attachSportsCatalogIdsToInstallations,
     buildOverpassQuery,
+    extractSportsCatalogFromInstallations,
     fetchOsmElements,
     fetchOsmElementsWithFallback,
     importInstallationsFromOsm,
+    inferSportEnvironment,
     inferInstallationName,
     inferInstallationType,
     normalizeSports,
+    normalizeSportsCatalogFromTags,
     transformOsmElementToInstallation,
     transformOverpassElements,
-    upsertInstallationsFromService
+    upsertInstallationsFromService,
+    upsertSportsCatalogFromService
 };

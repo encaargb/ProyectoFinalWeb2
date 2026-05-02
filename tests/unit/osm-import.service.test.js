@@ -1,11 +1,15 @@
 const {
+    attachSportsCatalogIdsToInstallations,
     buildOverpassQuery,
+    extractSportsCatalogFromInstallations,
     fetchOsmElements,
     fetchOsmElementsWithFallback,
     importInstallationsFromOsm,
+    normalizeSportsCatalogFromTags,
     transformOsmElementToInstallation,
     transformOverpassElements,
-    upsertInstallationsFromService
+    upsertInstallationsFromService,
+    upsertSportsCatalogFromService
 } = require('../../src/services/osm-import.service');
 
 describe('OSM import service', () => {
@@ -40,7 +44,10 @@ describe('OSM import service', () => {
             name: 'Polideportivo Juan de la Cierva',
             type: 'sports_centre',
             city: 'Getafe',
-            sports: [{ name: 'tennis' }, { name: 'soccer' }],
+            sports: [
+                { name: 'tennis', osmKey: 'tennis', category: null, environment: null },
+                { name: 'soccer', osmKey: 'soccer', category: null, environment: null }
+            ],
             location: {
                 type: 'Point',
                 coordinates: [-3.7, 40.3]
@@ -49,6 +56,18 @@ describe('OSM import service', () => {
             source: 'OpenStreetMap',
             lastUpdated: importedAt
         });
+    });
+
+    test('normalizeSportsCatalogFromTags crea entradas de catálogo con información OSM disponible', () => {
+        const sports = normalizeSportsCatalogFromTags({
+            sport: 'tennis;soccer',
+            leisure: 'pitch'
+        });
+
+        expect(sports).toEqual([
+            { name: 'tennis', osmKey: 'tennis', category: null, environment: 'outdoor' },
+            { name: 'soccer', osmKey: 'soccer', category: null, environment: 'outdoor' }
+        ]);
     });
 
     test('transformOverpassElements deduplica por externalId y descarta elementos sin coordenadas', () => {
@@ -133,6 +152,74 @@ describe('OSM import service', () => {
         });
     });
 
+    test('extractSportsCatalogFromInstallations deduplica deportes por osmKey', () => {
+        const sports = extractSportsCatalogFromInstallations([
+            {
+                sports: [
+                    { name: 'tennis', osmKey: 'tennis', category: null, environment: 'outdoor' },
+                    { name: 'soccer', osmKey: 'soccer', category: null, environment: 'outdoor' }
+                ]
+            },
+            {
+                sports: [
+                    { name: 'tennis', osmKey: 'tennis', category: null, environment: 'outdoor' }
+                ]
+            }
+        ]);
+
+        expect(sports).toEqual([
+            { name: 'tennis', osmKey: 'tennis', category: null, environment: 'outdoor' },
+            { name: 'soccer', osmKey: 'soccer', category: null, environment: 'outdoor' }
+        ]);
+    });
+
+    test('upsertSportsCatalogFromService hace upsert y devuelve deportes por osmKey', async () => {
+        const tennisId = { toString: () => 'sport-tennis-id' };
+        const bulkWrite = jest.fn().mockResolvedValue({
+            upsertedCount: 1,
+            modifiedCount: 1
+        });
+        const toArray = jest.fn().mockResolvedValue([
+            { _id: tennisId, name: 'tennis', osmKey: 'tennis' }
+        ]);
+        const find = jest.fn().mockReturnValue({ toArray });
+        const db = {
+            collection: jest.fn().mockReturnValue({ bulkWrite, find })
+        };
+
+        const result = await upsertSportsCatalogFromService({
+            db,
+            sports: [
+                { name: 'tennis', osmKey: 'tennis', category: null, environment: 'outdoor' }
+            ]
+        });
+
+        expect(db.collection).toHaveBeenCalledWith('sports');
+        expect(bulkWrite).toHaveBeenCalled();
+        expect(find).toHaveBeenCalledWith({ osmKey: { $in: ['tennis'] } });
+        expect(result.received).toBe(1);
+        expect(result.inserted).toBe(1);
+        expect(result.updated).toBe(1);
+        expect(result.byOsmKey.get('tennis')._id.toString()).toBe('sport-tennis-id');
+    });
+
+    test('attachSportsCatalogIdsToInstallations enlaza sportId antes de guardar instalaciones', () => {
+        const sportsByOsmKey = new Map([
+            ['tennis', { _id: { toString: () => 'sport-tennis-id' }, osmKey: 'tennis' }]
+        ]);
+
+        const result = attachSportsCatalogIdsToInstallations([
+            {
+                name: 'Pista Norte',
+                sports: [{ name: 'tennis', osmKey: 'tennis', category: null, environment: 'outdoor' }]
+            }
+        ], sportsByOsmKey);
+
+        expect(result[0].sports).toEqual([
+            { name: 'tennis', sportId: 'sport-tennis-id' }
+        ]);
+    });
+
     test('fetchOsmElementsWithFallback prueba otra instancia si la primera falla', async () => {
         const fetchImpl = jest
             .fn()
@@ -189,12 +276,28 @@ describe('OSM import service', () => {
             })
         });
 
-        const bulkWrite = jest.fn().mockResolvedValue({
+        const installationsBulkWrite = jest.fn().mockResolvedValue({
             upsertedCount: 1,
             modifiedCount: 0
         });
+        const sportsBulkWrite = jest.fn().mockResolvedValue({
+            upsertedCount: 1,
+            modifiedCount: 0
+        });
+        const sportId = { toString: () => 'sport-basketball-id' };
+        const sportsFind = jest.fn().mockReturnValue({
+            toArray: jest.fn().mockResolvedValue([
+                { _id: sportId, name: 'basketball', osmKey: 'basketball' }
+            ])
+        });
         const db = {
-            collection: jest.fn().mockReturnValue({ bulkWrite })
+            collection: jest.fn((name) => {
+                if (name === 'sports') {
+                    return { bulkWrite: sportsBulkWrite, find: sportsFind };
+                }
+
+                return { bulkWrite: installationsBulkWrite };
+            })
         };
         const onProgress = jest.fn();
 
@@ -207,12 +310,21 @@ describe('OSM import service', () => {
         });
 
         expect(fetchImpl).toHaveBeenCalled();
-        expect(bulkWrite).toHaveBeenCalled();
+        expect(sportsBulkWrite).toHaveBeenCalled();
+        expect(installationsBulkWrite).toHaveBeenCalled();
+        expect(installationsBulkWrite.mock.calls[0][0][0].updateOne.update.$set.sports).toEqual([
+            { name: 'basketball', sportId: 'sport-basketball-id' }
+        ]);
         expect(onProgress).toHaveBeenCalled();
         expect(result).toEqual({
             municipality: 'Getafe',
             fetched: 1,
             imported: 1,
+            sportsCatalog: {
+                received: 1,
+                inserted: 1,
+                updated: 0
+            },
             received: 1,
             inserted: 1,
             updated: 0
