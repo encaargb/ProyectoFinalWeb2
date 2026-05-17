@@ -390,7 +390,56 @@ npm run import:osm -- --municipality=Getafe
 
 Hay que tener cuidado con `deleteMany({})`, porque borra todos los documentos de la colección seleccionada.
 
-## 12. Limitaciones actuales
+## 12. Dataset JSON incluido en el repositorio
+
+Además de la carga directa desde OpenStreetMap, el repositorio incluye una exportación JSON del estado actual de la base de datos local `proyectoFinalWeb`.
+
+Archivos incluidos:
+
+```text
+data/installations.json
+data/sports.json
+data/weather-records.json
+```
+
+Contenido exportado:
+
+- `installations.json`: 836 instalaciones deportivas.
+- `sports.json`: 33 deportes del catálogo.
+- `weather-records.json`: 3 registros meteorológicos.
+
+Este dataset permite inicializar MongoDB sin depender en ese momento de OpenStreetMap ni de OpenWeather. Es una captura de los datos ya cargados previamente en la base local.
+
+### 12.1. Importar el dataset en MongoDB
+
+Desde la raíz del proyecto API:
+
+```powershell
+mongoimport --db=proyectoFinalWeb --collection=installations --file=data/installations.json --jsonArray
+mongoimport --db=proyectoFinalWeb --collection=sports --file=data/sports.json --jsonArray
+mongoimport --db=proyectoFinalWeb --collection=weather-records --file=data/weather-records.json --jsonArray
+```
+
+Si la base ya tiene datos y se quiere reconstruir desde cero, primero se pueden vaciar las colecciones:
+
+```javascript
+use proyectoFinalWeb
+db.installations.deleteMany({})
+db.sports.deleteMany({})
+db["weather-records"].deleteMany({})
+```
+
+### 12.2. Regenerar el dataset desde MongoDB local
+
+Si se actualizan los datos locales y se quiere volver a generar la exportación:
+
+```powershell
+mongoexport --uri="mongodb://localhost:27017/proyectoFinalWeb" --collection=installations --out="data/installations.json" --jsonArray
+mongoexport --uri="mongodb://localhost:27017/proyectoFinalWeb" --collection=sports --out="data/sports.json" --jsonArray
+mongoexport --uri="mongodb://localhost:27017/proyectoFinalWeb" --collection=weather-records --out="data/weather-records.json" --jsonArray
+```
+
+## 13. Limitaciones actuales
 
 - La carga depende de la disponibilidad de Overpass.
 - El nombre del municipio debe coincidir con el `name` de la relación administrativa OSM.

@@ -1,50 +1,178 @@
 # ProyectoFinalWeb2
 
-## Integrantes del grupo:
-- _Inés Del Río García_
-- _Encarnación Teresa González Buitrago_
-- _Jesús Joana Azuara_
-- _Lucía Sorní Scaletti_
+API REST para consultar y gestionar instalaciones deportivas, deportes asociados e histórico meteorológico.
+
+## Integrantes del grupo
+
+- Inés Del Río García
+- Encarnación Teresa González Buitrago
+- Jesús Joana Azuara
+- Lucía Sorní Scaletti
 
 ## Temática
-El proyecto consiste en el desarrollo de una plataforma orientada a **descubrir y consultar instalaciones deportivas en España**, con el objetivo de facilitar a los usuarios encontrar lugares donde practicar distintos deportes según el tipo de instalación, el deporte disponible o su localización geográfica. La aplicación utiliza un conjunto amplio de **datos abiertos procedentes de OpenStreetMap**, que incluye miles de instalaciones deportivas como centros deportivos, estadios, pistas o parques con equipamiento para practicar deporte. Cada instalación contiene información como el nombre, el tipo de lugar, los deportes que se pueden practicar y sus coordenadas geográficas, lo que permite a los usuarios explorar y localizar fácilmente diferentes espacios deportivos en distintas ciudades del país.
 
-Además, el sistema se complementa con **información externa que enriquece los datos de las instalaciones**, como las **condiciones meteorológicas de la zona**, permitiendo a los usuarios conocer el clima antes de realizar una actividad deportiva. De esta forma, la plataforma no solo ayuda a descubrir instalaciones deportivas cercanas, sino también a **planificar mejor cuándo y dónde practicar deporte**, facilitando el acceso a espacios deportivos y fomentando la actividad física en diferentes regiones de España.
+El proyecto consiste en una plataforma para descubrir y consultar instalaciones deportivas. La API permite trabajar con instalaciones, catálogo de deportes e información meteorológica asociada a instalaciones concretas.
 
-## Tecnologías que vamos a utilizar
+Los datos principales proceden de OpenStreetMap y se almacenan en MongoDB. La meteorología se obtiene desde OpenWeather cuando se consulta el endpoint correspondiente y se persiste como histórico en la base de datos.
+
+## Repositorios del proyecto
+
+- API REST: `ProyectoFinalWeb2`.
+- Cliente web: `ProyectoFinalWeb2-Cliente`.
+
+El cliente web es independiente y consume esta API mediante peticiones HTTP desde el navegador.
+
+## Tecnologías
+
 - Node.js
 - Express
 - MongoDB
-- OpenAPI
+- OpenAPI / Swagger UI
 - Jest
 - Supertest
 
-## Arquitectura
-El proyecto queda separado en dos repositorios:
+## Requisitos previos
 
-- API REST: este repositorio, responsable de exponer datos JSON.
-- Cliente Web: `ProyectoFinalWeb2-Cliente`, responsable de servir HTML, CSS y JavaScript del navegador.
+Para ejecutar el proyecto se necesita:
 
-## Situación actual del backend
+- Node.js instalado.
+- MongoDB en ejecución en local o una URI de MongoDB accesible.
+- MongoDB Database Tools si se quiere importar o exportar el dataset JSON con `mongoimport` y `mongoexport`.
+- Una API key de OpenWeather para consultar meteorología bajo demanda.
 
-La API ya expone los recursos principales del proyecto:
+## Instalación
 
-- gestión de instalaciones mediante `/installations`;
-- gestión del catálogo global de deportes mediante `/sports`;
-- consulta del histórico meteorológico mediante `/weather-records`;
-- consulta meteorológica bajo demanda con `/installations/{id}/weather`;
-- documentación OpenAPI disponible en `/api-docs`.
+Desde la raíz del repositorio API:
 
-El importador OSM carga instalaciones deportivas y, además, crea o actualiza el catálogo `sports` a partir de la información disponible en OSM. Cuando puede enlazar una instalación con un deporte del catálogo, guarda la referencia como `sportId + name` dentro de `installations.sports`.
-
-La recarga por municipio reconstruye las instalaciones procedentes de OpenStreetMap: mantiene o actualiza las instalaciones que siguen apareciendo en la nueva carga y elimina las instalaciones antiguas de ese municipio que ya no aparecen. Si elimina instalaciones, también borra sus registros asociados en `weather-records` para evitar histórico huérfano.
-
-Las siguientes iteraciones previstas se centran en cerrar detalles transversales: búsqueda textual avanzada en instalaciones, revisión de índices, limpieza final de OpenAPI y revisión de mensajes.
-
-## Ejecución de la API
 ```bash
 npm install
+```
+
+## Configuración
+
+Crear un archivo `.env` en la raíz del proyecto API.
+
+Ejemplo:
+
+```env
+PORT=3000
+CLIENT_ORIGIN=http://localhost:5173
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB_NAME=proyectoFinalWeb
+OPENWEATHER_API_KEY=tu_api_key_de_openweather
+OPENWEATHER_BASE_URL=https://api.openweathermap.org/data/2.5
+WEATHER_CACHE_TTL_MINUTES=60
+```
+
+Significado de las variables:
+
+- `PORT`: puerto donde arranca la API REST. Por defecto, `3000`.
+- `CLIENT_ORIGIN`: origen permitido para CORS. Por defecto, `http://localhost:5173`.
+- `MONGODB_URI`: URI de conexión a MongoDB.
+- `MONGODB_DB_NAME`: base de datos utilizada por la aplicación. En este proyecto se usa `proyectoFinalWeb`.
+- `OPENWEATHER_API_KEY`: clave de acceso a OpenWeather.
+- `OPENWEATHER_BASE_URL`: URL base de OpenWeather.
+- `WEATHER_CACHE_TTL_MINUTES`: minutos durante los que se reutiliza el último registro meteorológico de una instalación antes de consultar de nuevo OpenWeather.
+
+## Ejecución de MongoDB
+
+La API necesita que MongoDB esté arrancado antes de iniciar el servidor.
+
+Si se usa MongoDB local, la URI esperada es:
+
+```text
+mongodb://localhost:27017
+```
+
+La base de datos configurada para el proyecto es:
+
+```text
+proyectoFinalWeb
+```
+
+## Carga de datos
+
+El proyecto tiene dos formas de inicializar datos en MongoDB.
+
+### Opción 1: importar el dataset JSON incluido
+
+El repositorio incluye una exportación JSON en:
+
+```text
+data/installations.json
+data/sports.json
+data/weather-records.json
+```
+
+Contenido actual:
+
+- `installations.json`: 836 instalaciones deportivas.
+- `sports.json`: 33 deportes.
+- `weather-records.json`: 3 registros meteorológicos.
+
+Para importar estos datos en MongoDB:
+
+```powershell
+mongoimport --db=proyectoFinalWeb --collection=installations --file=data/installations.json --jsonArray
+mongoimport --db=proyectoFinalWeb --collection=sports --file=data/sports.json --jsonArray
+mongoimport --db=proyectoFinalWeb --collection=weather-records --file=data/weather-records.json --jsonArray
+```
+
+Si la base ya contiene datos y se quiere reconstruir desde cero:
+
+```javascript
+use proyectoFinalWeb
+db.installations.deleteMany({})
+db.sports.deleteMany({})
+db["weather-records"].deleteMany({})
+```
+
+Después se pueden ejecutar de nuevo los comandos `mongoimport`.
+
+### Opción 2: cargar datos desde OpenStreetMap
+
+El proyecto incluye un script npm para cargar instalaciones desde OpenStreetMap mediante Overpass.
+
+Ejemplo:
+
+```bash
+npm run import:osm -- --municipality=Getafe
+```
+
+También se puede indicar una base de datos concreta:
+
+```bash
+npm run import:osm -- --municipality=Getafe --db=proyectoFinalWeb
+```
+
+El importador:
+
+- consulta instalaciones deportivas en OpenStreetMap;
+- transforma los datos al modelo interno;
+- crea o actualiza documentos en `installations`;
+- crea o actualiza el catálogo `sports`;
+- enlaza instalaciones con deportes mediante `sportId` y `name`;
+- elimina instalaciones antiguas de ese municipio si ya no aparecen en la nueva carga;
+- elimina registros de `weather-records` asociados a instalaciones eliminadas.
+
+El proceso completo está documentado en:
+
+```text
+docs/script_cargaDatos.md
+```
+
+## Ejecución de la API REST
+
+Modo desarrollo:
+
+```bash
 npm run dev
+```
+
+Modo normal:
+
+```bash
+npm start
 ```
 
 URL local:
@@ -53,38 +181,162 @@ URL local:
 http://localhost:3000
 ```
 
-Endpoints principales:
+Comprobación rápida:
 
-- `/installations`
-- `/sports`
-- `/weather-records`
-
-## Importación de datos desde OSM
-La carga de datos de OpenStreetMap se hace con un script separado de la aplicación.
-
-El importador carga:
-
-- instalaciones deportivas en `installations`;
-- deportes detectados en el tag OSM `sport` dentro del catálogo `sports`;
-- referencias `sportId` en los deportes asociados a cada instalación cuando el catálogo queda enlazado;
-- limpieza de instalaciones OSM obsoletas del municipio importado;
-- limpieza de `weather-records` asociados a instalaciones eliminadas durante la recarga.
-
-Ejemplo con `npm`:
-```bash
-npm run import:osm -- --municipality=Getafe --db=sports_facilities_test
+```http
+GET http://localhost:3000/
 ```
 
-Para vaciar y recargar una base de datos desde cero se recomienda borrar primero las colecciones implicadas desde `mongosh` y lanzar de nuevo el importador:
+Respuesta esperada:
 
-```javascript
-db.installations.deleteMany({})
-db.sports.deleteMany({})
-db["weather-records"].deleteMany({})
+```json
+{
+  "message": "Sports Facilities API is running"
+}
 ```
 
-Después:
+## Documentación de la API
+
+Swagger UI:
+
+```text
+http://localhost:3000/api-docs
+```
+
+Archivo OpenAPI:
+
+```text
+docs/openapi.yaml
+```
+
+Documento de diseño REST con ejemplos:
+
+```text
+docs/diseno_interfaz_rest.md
+```
+
+Modelo de datos:
+
+```text
+docs/modelo_datos.md
+```
+
+Schema XML de instalación:
+
+```text
+docs/schemas/installation.xsd
+```
+
+## Endpoints principales
+
+- `GET /`
+- `GET /installations`
+- `POST /installations`
+- `GET /installations/{id}`
+- `PUT /installations/{id}`
+- `DELETE /installations/{id}`
+- `GET /installations/{id}/weather`
+- `GET /sports`
+- `POST /sports`
+- `GET /sports/{id}`
+- `PUT /sports/{id}`
+- `PATCH /sports/{id}`
+- `DELETE /sports/{id}`
+- `GET /weather-records`
+- `GET /weather-records/{id}`
+
+## Formatos JSON y XML
+
+La API responde en JSON por defecto.
+
+El detalle de una instalación también puede devolverse en XML enviando la cabecera:
+
+```http
+Accept: application/xml
+```
+
+Ejemplo:
+
+```http
+GET /installations/{id}
+Accept: application/xml
+```
+
+El schema asociado a esta respuesta está en:
+
+```text
+docs/schemas/installation.xsd
+```
+
+## API externa
+
+El proyecto usa OpenWeather para consultar meteorología actual de una instalación.
+
+Endpoint interno:
+
+```http
+GET /installations/{id}/weather
+```
+
+Funcionamiento:
+
+- la API busca la instalación en MongoDB;
+- toma sus coordenadas;
+- si hay un registro meteorológico reciente, lo reutiliza;
+- si no hay registro reciente, consulta OpenWeather;
+- transforma la respuesta externa;
+- guarda el resultado en `weather-records`;
+- devuelve el registro al cliente.
+
+Si OpenWeather falla, la API responde con error controlado y el resto de endpoints siguen funcionando.
+
+## Cliente web
+
+El cliente se encuentra en el repositorio:
+
+```text
+ProyectoFinalWeb2-Cliente
+```
+
+Por defecto se ejecuta en:
+
+```text
+http://localhost:5173
+```
+
+El cliente espera que la API esté disponible en:
+
+```text
+http://localhost:3000
+```
+
+## Tests
+
+Ejecutar la suite de tests:
 
 ```bash
-npm run import:osm -- --municipality=Getafe
+npm test
+```
+
+## Estructura relevante
+
+```text
+ProyectoFinalWeb2/
+  data/
+    installations.json
+    sports.json
+    weather-records.json
+  docs/
+    diseno_interfaz_rest.md
+    especificacion_proyecto.md
+    modelo_datos.md
+    openapi.yaml
+    script_cargaDatos.md
+    schemas/
+      installation.xsd
+  scripts/
+    import-osm.js
+  src/
+    app.js
+    server.js
 ```
