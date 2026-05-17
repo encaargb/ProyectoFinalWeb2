@@ -157,7 +157,7 @@ Se descartan elementos que no tengan coordenadas ni centro geométrico.
 
 Campos principales generados:
 
-- `name`: nombre OSM si existe; si no existe, se crea un nombre técnico.
+- `name`: nombre OSM si existe; si no existe, se intenta usar un campo alternativo de nombre; si no hay ninguno, se marca como pendiente de completar.
 - `type`: se infiere desde `leisure`, `amenity`, `building` o `sports_facility`.
 - `city`: municipio indicado en `--municipality`.
 - `sports`: deportes detectados en el tag OSM `sport`.
@@ -165,6 +165,23 @@ Campos principales generados:
 - `externalId`: identificador técnico con formato `type/id`, por ejemplo `node/123`.
 - `source`: siempre `OpenStreetMap`.
 - `lastUpdated`: fecha de la importación.
+
+Para resolver `name`, el importador revisa estos campos OSM por orden:
+
+1. `name`
+2. `name:es`
+3. `official_name`
+4. `alt_name`
+5. `short_name`
+6. `loc_name`
+
+Si ninguno existe, el nombre guardado queda marcado así:
+
+```text
+Nombre pendiente de completar (OSM node/7711200860)
+```
+
+De esta forma la aplicación conserva la instalación, pero deja claro que el campo `name` no procede realmente de OSM y debe revisarse manualmente.
 
 Los deportes de una instalación se normalizan a partir del tag `sport`.
 

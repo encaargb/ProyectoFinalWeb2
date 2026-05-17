@@ -86,13 +86,16 @@ function inferInstallationType(tags = {}) {
 }
 
 function inferInstallationName(element, municipality) {
-    // Si OSM no da nombre, construimos uno técnico para no perder el registro.
-    if (typeof element?.tags?.name === 'string' && element.tags.name.trim().length > 0) {
-        return element.tags.name.trim();
+    const tags = element?.tags || {};
+    const nameFields = ['name', 'name:es', 'official_name', 'alt_name', 'short_name', 'loc_name'];
+
+    for (const field of nameFields) {
+        if (typeof tags[field] === 'string' && tags[field].trim().length > 0) {
+            return tags[field].trim();
+        }
     }
 
-    const type = inferInstallationType(element?.tags || {}).replace(/_/g, ' ');
-    return `${type} ${municipality} ${element.type} ${element.id}`;
+    return `Nombre pendiente de completar (OSM ${element.type}/${element.id})`;
 }
 
 function transformOsmElementToInstallation(element, options = {}) {

@@ -71,6 +71,44 @@ describe('OSM import service', () => {
         ]);
     });
 
+    test('transformOsmElementToInstallation usa campos alternativos de nombre si no existe name', () => {
+        const document = transformOsmElementToInstallation({
+            type: 'way',
+            id: 456,
+            center: {
+                lat: 40.3,
+                lon: -3.7
+            },
+            tags: {
+                official_name: 'Centro Deportivo Municipal',
+                leisure: 'sports_centre'
+            }
+        }, {
+            municipality: 'Getafe',
+            importedAt: new Date('2026-04-19T16:00:00.000Z')
+        });
+
+        expect(document.name).toBe('Centro Deportivo Municipal');
+    });
+
+    test('transformOsmElementToInstallation marca el nombre como pendiente si OSM no trae nombre', () => {
+        const document = transformOsmElementToInstallation({
+            type: 'node',
+            id: 7711200860,
+            lat: 40.3163251,
+            lon: -3.6950027,
+            tags: {
+                leisure: 'fitness_station',
+                sport: 'fitness'
+            }
+        }, {
+            municipality: 'Getafe',
+            importedAt: new Date('2026-04-19T16:00:00.000Z')
+        });
+
+        expect(document.name).toBe('Nombre pendiente de completar (OSM node/7711200860)');
+    });
+
     test('transformOverpassElements deduplica por externalId y descarta elementos sin coordenadas', () => {
         const documents = transformOverpassElements([
             {
