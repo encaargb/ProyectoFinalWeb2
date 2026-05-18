@@ -49,11 +49,16 @@ describe('Installation Weather API - Integration Tests', () => {
         // Simulamos una respuesta válida del proveedor para cubrir el flujo "sin caché previa".
         global.fetch = jest.fn().mockResolvedValue({
             ok: true,
-            json: jest.fn().mockResolvedValue({
-                main: { temp: 23, humidity: 42 },
-                weather: [{ description: 'despejado' }],
-                wind: { speed: 6 }
-            })
+            text: jest.fn().mockResolvedValue(`
+                <current>
+                    <temperature value="23" unit="metric"/>
+                    <humidity value="42" unit="%"/>
+                    <wind>
+                        <speed value="6" unit="m/s" name="Moderate Breeze"/>
+                    </wind>
+                    <weather number="800" value="despejado" icon="01d"/>
+                </current>
+            `)
         });
 
         const res = await request(app).get(`/installations/${installationId.toString()}/weather`);
@@ -113,11 +118,16 @@ describe('Installation Weather API - Integration Tests', () => {
 
         global.fetch = jest.fn().mockResolvedValue({
             ok: true,
-            json: jest.fn().mockResolvedValue({
-                main: { temp: 24, humidity: 30 },
-                weather: [{ description: 'soleado' }],
-                wind: { speed: 5 }
-            })
+            text: jest.fn().mockResolvedValue(`
+                <current>
+                    <temperature value="24" unit="metric"/>
+                    <humidity value="30" unit="%"/>
+                    <wind>
+                        <speed value="5" unit="m/s" name="Gentle Breeze"/>
+                    </wind>
+                    <weather number="800" value="soleado" icon="01d"/>
+                </current>
+            `)
         });
 
         const res = await request(app).get(`/installations/${installationId.toString()}/weather`);
@@ -190,10 +200,12 @@ describe('Installation Weather API - Integration Tests', () => {
         // La respuesta llega, pero sin temp ni description, así que el contrato la rechaza.
         global.fetch = jest.fn().mockResolvedValue({
             ok: true,
-            json: jest.fn().mockResolvedValue({
-                main: {},
-                weather: []
-            })
+            text: jest.fn().mockResolvedValue(`
+                <current>
+                    <temperature unit="metric"/>
+                    <weather number="800" icon="01d"/>
+                </current>
+            `)
         });
 
         const res = await request(app).get(`/installations/${installationId.toString()}/weather`);

@@ -332,6 +332,8 @@ Respuesta:
 
 Este endpoint consulta OpenWeather, crea o reutiliza un registro meteorologico y devuelve el resultado.
 
+Cuando necesita consultar el proveedor externo, la API solicita la respuesta de OpenWeather en XML mediante `mode=xml`, interpreta ese XML y transforma sus campos al modelo interno de `weather-records`. La respuesta publica de este endpoint sigue siendo JSON.
+
 ```http
 GET /installations/663a80143d5f0f9f2df84c22/weather HTTP/1.1
 Host: localhost:3000

@@ -22,10 +22,9 @@ La API REST esta implementada en Node.js con Express, utiliza MongoDB como base 
 
 La version revisada cumple la mayoria de los requisitos estructurales del proyecto: tecnologia Node.js, uso de MongoDB, existencia de tres recursos relacionados, persistencia en colecciones separadas, mensajes JSON, mensaje XML con schema asociado, carga de datos mediante script npm y dataset incluido en el repositorio.
 
-Sin embargo, he detectado dos puntos pendientes respecto al enunciado que deben resolverse antes de considerar la entrega completamente cerrada:
+Tras la iteracion de consumo XML externo, queda un punto pendiente respecto al enunciado que debe resolverse antes de considerar la entrega completamente cerrada:
 
-1. La API no consume actualmente ningun mensaje XML desde una API externa.
-2. Ninguna coleccion incluida en el dataset del repositorio alcanza los 1000 documentos.
+1. Ninguna coleccion incluida en el dataset del repositorio alcanza los 1000 documentos.
 
 El requisito de CRUD sobre la base de datos se considera cumplido, ya que la API ofrece operaciones CRUD publicas sobre la base de datos a traves de los recursos `installations` y `sports`. El recurso `weather-records` funciona como historico meteorologico generado por la propia API y consultable desde endpoints publicos.
 
@@ -47,8 +46,8 @@ El arbol de trabajo estaba limpio en el momento de la revision, por lo que el an
 | La tematica es libre, excepto series y peliculas, y debe estar validada por el profesor. | Parcial / no verificable | La tematica es instalaciones deportivas, por lo que no incumple la restriccion de series y peliculas. No se puede verificar desde el repositorio si fue validada formalmente por el profesor. |
 | La API tiene que estar programada en Node.js. | Cumple | El proyecto usa Node.js, Express y dependencias npm. |
 | La API tiene que consumir informacion de al menos una API externa. | Cumple | Se consume OpenWeather para meteorologia y OpenStreetMap/Overpass para carga de instalaciones. |
-| Al menos un mensaje consumido desde API externa tiene que estar en formato XML. | Pendiente | OpenWeather y Overpass permiten obtener respuestas XML, pero la version actual del software no esta consumiendo XML externo. OpenWeather se consume como JSON y Overpass se consulta con salida JSON. |
-| Al menos un mensaje consumido desde API externa tiene que estar en formato JSON. | Cumple | OpenWeather y Overpass se parsean con `response.json()`. |
+| Al menos un mensaje consumido desde API externa tiene que estar en formato XML. | Cumple | OpenWeather se consulta con `mode=xml`, la respuesta externa se lee como texto XML, se parsea en Node.js y se transforma al modelo interno de `weather-records`. |
+| Al menos un mensaje consumido desde API externa tiene que estar en formato JSON. | Cumple | Overpass se consume como JSON en el importador OSM mediante `response.json()`. |
 | La informacion consumida tiene que integrarse con el resto de la API y guardarse en base de datos. | Cumple | Los datos de OpenStreetMap se guardan como instalaciones y deportes. Los datos de OpenWeather se guardan como registros meteorologicos asociados a instalaciones. |
 | La API tiene que seguir funcionando aunque la API externa este caida. | Cumple | Si OpenWeather falla, el endpoint meteorologico devuelve un error controlado y el resto de endpoints sigue funcionando. En la carga OSM se usan instancias fallback de Overpass; si todas fallan, solo queda afectado el proceso de importacion. |
 | La API tiene que ofrecer una interfaz REST con operaciones CRUD sobre la base de datos. | Cumple | La API ofrece CRUD completo sobre la base de datos mediante `installations` y `sports`. El requisito se interpreta sobre la base de datos en su conjunto, no necesariamente como CRUD completo en cada una de las tres colecciones. |
@@ -187,9 +186,10 @@ La version actual consume dos fuentes externas:
 
 1. **OpenWeather**
    - Se consulta desde `src/services/openweather.service.js`.
-   - La respuesta se procesa como JSON con `response.json()`.
+   - La peticion incluye `mode=xml`.
+   - La respuesta externa se procesa como XML mediante `response.text()` y parseo XML en Node.js.
    - Los datos se guardan en la coleccion `weather-records`.
-   - La documentacion oficial de OpenWeather permite solicitar XML con el parametro `mode=xml`, por lo que este servicio puede utilizarse para cerrar el requisito de consumo XML externo.
+   - Este flujo cierra el requisito de consumir un mensaje XML desde una API externa.
 
 2. **OpenStreetMap/Overpass**
    - Se consulta desde `src/services/osm-import.service.js`.
@@ -198,7 +198,7 @@ La version actual consume dos fuentes externas:
    - Los datos se guardan en `installations` y `sports`.
    - La documentacion oficial de Overpass tambien contempla OSM XML como formato de salida, aunque la version actual del script fuerza JSON.
 
-Conclusion: se cumple el consumo JSON externo. El consumo XML externo esta pendiente de implementar, aunque los servicios externos ya utilizados por el proyecto ofrecen la posibilidad tecnica de devolver XML.
+Conclusion: se cumple el consumo JSON externo mediante Overpass y el consumo XML externo mediante OpenWeather.
 
 ### 5.6. Persistencia en MongoDB
 
@@ -271,7 +271,7 @@ La suite de tests se ejecuto sobre esta version del proyecto con resultado corre
 
 ```text
 Test Suites: 17 passed, 17 total
-Tests: 152 passed, 152 total
+Tests: 154 passed, 154 total
 ```
 
 Esto indica que la version actual es estable respecto a los tests existentes, aunque los tests no cubren automaticamente todos los requisitos del enunciado, especialmente el consumo XML externo y la verificacion del minimo de 1000 documentos tras las cargas adicionales.
@@ -324,7 +324,7 @@ Resultado de tests del backend:
 
 ```text
 Test Suites: 17 passed, 17 total
-Tests: 152 passed, 152 total
+Tests: 154 passed, 154 total
 ```
 
 ### 7.3. Cliente desacoplado
@@ -454,14 +454,13 @@ Como mejora de claridad, el README se ha actualizado para indicar que el reposit
 
 La documentacion cumple los requisitos aplicables. El proyecto queda documentado para instalar dependencias, configurar entorno, cargar datos, arrancar la API, consultar Swagger/OpenAPI, entender el modelo de datos y ejecutar tests.
 
-El unico matiz importante es que la documentacion final debera actualizarse de nuevo cuando se implementen los dos puntos pendientes:
+El unico matiz importante es que la documentacion final debera actualizarse de nuevo cuando se complete el punto pendiente de datos:
 
-- consumo XML externo;
 - ampliacion del dataset hasta superar los 1000 documentos en `installations`.
 
 ## 9. Puntos pendientes detectados
 
-### 9.1. Falta implementar consumo XML desde API externa
+### 9.1. Consumo XML desde API externa implementado
 
 El enunciado exige:
 
@@ -469,24 +468,22 @@ El enunciado exige:
 Al menos un mensaje que se consuma tiene que ser en formato XML.
 ```
 
-En la version revisada no se consume ningun XML desde una API externa. La API produce XML en una respuesta propia, pero eso no equivale a consumir XML externo.
+La API ya consume XML desde una API externa. La integracion de OpenWeather solicita la respuesta del proveedor con `mode=xml`, lee el cuerpo con `response.text()`, parsea el XML en Node.js y lo transforma al modelo interno de `weather-records`.
 
-El punto importante es que los servicios externos ya usados por el proyecto si ofrecen esta posibilidad:
+El flujo queda integrado en:
 
-- **OpenWeather** permite solicitar XML usando `mode=xml`.
-- **OpenStreetMap/Overpass** permite devolver OSM XML, aunque actualmente el script usa `[out:json]`.
+- `GET /installations/{id}/weather`;
+- `src/services/openweather.service.js`;
+- coleccion MongoDB `weather-records`.
 
-Para cumplir este requisito se implementara consumo XML externo, preferiblemente sobre OpenWeather por estar ya integrado en el flujo meteorologico del proyecto.
+El cliente de la API sigue recibiendo JSON desde el endpoint REST, pero el mensaje consumido desde OpenWeather es XML, que es el requisito que estaba pendiente.
 
-El trabajo necesario sera:
+Se han anadido pruebas para verificar:
 
-- seleccionar el endpoint externo que devuelva XML y que este relacionado con el dominio del proyecto;
-- solicitar la respuesta en XML;
-- parsear el XML en Node.js;
-- transformar los datos al modelo interno;
-- guardar la informacion resultante en MongoDB;
-- documentar el flujo;
-- anadir tests unitarios e integracion para verificar el parseo, la transformacion y la persistencia.
+- construccion de URL con `mode=xml`;
+- parseo de XML valido;
+- rechazo de XML mal formado o incompleto;
+- persistencia del resultado en `weather-records`.
 
 ### 9.2. Falta completar una coleccion con al menos 1000 documentos
 
@@ -520,23 +517,13 @@ Este requisito se considera cumplido. La API ofrece operaciones CRUD sobre la ba
 
 ## 10. Recomendaciones para cerrar el cumplimiento
 
-1. **Anadir consumo XML externo.**
-   - Usar una API externa relacionada con el dominio del proyecto que pueda devolver XML.
-   - Preferentemente, aprovechar OpenWeather con `mode=xml`, ya que el proyecto ya lo usa para meteorologia.
-   - Parsear el XML en Node.js.
-   - Transformar los datos al modelo interno.
-   - Guardarlos en MongoDB.
-   - Documentar el flujo.
-   - Anadir tests unitarios e integracion.
-
-2. **Ampliar la coleccion `installations` a mas de 1000 documentos.**
+1. **Ampliar la coleccion `installations` a mas de 1000 documentos.**
    - Ejecutar el script de carga para uno o varios municipios adicionales.
    - Verificar que `installations` supera los 1000 documentos.
    - Regenerar `data/installations.json`.
    - Actualizar README y documentacion con el nuevo conteo.
 
-3. **Actualizar la documentacion final.**
-   - Indicar claramente que XML se consume externamente.
+2. **Actualizar la documentacion final.**
    - Indicar la coleccion que supera los 1000 documentos.
    - Mantener sincronizados README, OpenAPI y documentos de diseno.
 
@@ -544,9 +531,8 @@ Este requisito se considera cumplido. La API ofrece operaciones CRUD sobre la ba
 
 Como conclusion de la revision, considero que la version actual del software esta bastante avanzada y cumple la estructura principal esperada para el proyecto: API REST en Node.js, MongoDB, tres recursos relacionados, JSON, XML de salida con schema, scripts de carga y dataset.
 
-No obstante, para considerar que cumple completamente el enunciado, hay que cerrar dos puntos pendientes:
+No obstante, para considerar que cumple completamente el enunciado, queda un punto pendiente:
 
-- incorporar consumo real de XML desde una API externa, aprovechando que OpenWeather y Overpass ofrecen XML;
 - realizar cargas adicionales para que la coleccion `installations` supere los 1000 documentos y regenerar el dataset.
 
-Hasta que esos dos puntos no se resuelvan, la version actual debe considerarse funcional y estable, con el CRUD REST sobre la base de datos cumplido, pero todavia pendiente de cerrar completamente respecto al consumo XML externo y al volumen minimo de datos.
+Hasta que ese punto no se resuelva, la version actual debe considerarse funcional y estable, con el CRUD REST sobre la base de datos y el consumo XML externo cumplidos, pero todavia pendiente de cerrar completamente respecto al volumen minimo de datos.

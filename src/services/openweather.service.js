@@ -1,3 +1,5 @@
+const { XMLParser, XMLValidator } = require('fast-xml-parser');
+
 const DEFAULT_OPENWEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
 const DEFAULT_WEATHER_CACHE_TTL_MINUTES = 60;
 
@@ -52,13 +54,43 @@ function buildCurrentWeatherUrl({ lat, lon, config }) {
     url.searchParams.set('appid', config.apiKey);
     url.searchParams.set('units', 'metric');
     url.searchParams.set('lang', 'es');
+    url.searchParams.set('mode', 'xml');
 
     return url.toString();
 }
 
-function normalizeOpenWeatherPayload(payload, queryDate = new Date()) {
-    const temperature = payload?.main?.temp;
-    const condition = payload?.weather?.[0]?.description;
+const openWeatherXmlParser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: '',
+    parseAttributeValue: true,
+    trimValues: true
+});
+
+function parseOpenWeatherXml(xmlContent) {
+    if (typeof xmlContent !== 'string' || xmlContent.trim().length === 0) {
+        throw createServiceError(
+            'WEATHER_PROVIDER_INVALID_RESPONSE',
+            'No se pudo obtener la información meteorológica del servicio externo',
+            502
+        );
+    }
+
+    const validationResult = XMLValidator.validate(xmlContent);
+    if (validationResult !== true) {
+        throw createServiceError(
+            'WEATHER_PROVIDER_INVALID_RESPONSE',
+            'No se pudo obtener la información meteorológica del servicio externo',
+            502
+        );
+    }
+
+    return openWeatherXmlParser.parse(xmlContent);
+}
+
+function normalizeOpenWeatherXmlPayload(payload, queryDate = new Date()) {
+    const currentWeather = payload?.current;
+    const temperature = currentWeather?.temperature?.value;
+    const condition = currentWeather?.weather?.value;
 
     if (!Number.isFinite(temperature) || typeof condition !== 'string' || condition.trim().length === 0) {
         throw createServiceError(
@@ -72,8 +104,8 @@ function normalizeOpenWeatherPayload(payload, queryDate = new Date()) {
         queryDate,
         temperature,
         condition: condition.trim(),
-        humidity: parseOptionalNumber(payload?.main?.humidity),
-        windspeed: parseOptionalNumber(payload?.wind?.speed)
+        humidity: parseOptionalNumber(currentWeather?.humidity?.value),
+        windspeed: parseOptionalNumber(currentWeather?.wind?.speed?.value)
     };
 }
 
@@ -99,8 +131,9 @@ async function fetchCurrentWeatherByCoordinates({ lat, lon, fetchImpl = global.f
         );
     }
 
-    const payload = await response.json();
-    return normalizeOpenWeatherPayload(payload, queryDate);
+    const xmlContent = await response.text();
+    const payload = parseOpenWeatherXml(xmlContent);
+    return normalizeOpenWeatherXmlPayload(payload, queryDate);
 }
 
 // Un weather-record es vigente si su queryDate entra dentro del TTL configurado.
@@ -122,5 +155,6 @@ module.exports = {
     fetchCurrentWeatherByCoordinates,
     getWeatherConfig,
     isWeatherRecordFresh,
-    normalizeOpenWeatherPayload
+    normalizeOpenWeatherXmlPayload,
+    parseOpenWeatherXml
 };

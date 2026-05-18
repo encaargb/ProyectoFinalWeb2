@@ -405,13 +405,15 @@ En curso. El importador OSM ya se ha alineado parcialmente con el modelo final.
 
 ## Orden recomendado de ejecución
 
-1. Iteración 4: búsqueda avanzada en `installations`
-2. Iteración 5: cierre transversal
+1. Iteración 7: consumo XML externo con OpenWeather
+2. Iteración 4: búsqueda avanzada en `installations`
+3. Iteración 5: cierre transversal
 
 ## Motivo de este orden actual
 
 - `sports`, `weather-records` y meteorología bajo demanda ya están operativos.
 - la recarga de datos ya tiene limpieza de instalaciones obsoletas y weather huérfano.
+- el consumo XML externo es un requisito obligatorio pendiente detectado en la revisión final.
 - la búsqueda avanzada mejora directamente la experiencia del cliente.
 - el cierre transversal debe hacerse cuando estén estables los recursos principales.
 
@@ -440,6 +442,77 @@ Cerrar el flujo de mantenimiento de datos cuando se vacía o recarga la base de 
 - recarga de datos repetible y documentada;
 - menor riesgo de duplicados o referencias huérfanas;
 - flujo claro para vaciar y volver a importar datos.
+
+### Estado
+
+Completada.
+
+---
+
+## Iteración 7. Consumo XML externo con OpenWeather
+
+### Objetivo
+
+Resolver el requisito pendiente de consumir al menos un mensaje XML desde una API externa.
+
+La integración meteorológica dejará de solicitar JSON a OpenWeather y pasará a solicitar siempre XML mediante `mode=xml`.
+
+### Endpoint afectado
+
+- `GET /installations/{id}/weather`
+
+### Decisiones funcionales cerradas
+
+- el proveedor externo seguirá siendo `OpenWeather Current Weather API`;
+- la consulta se seguirá haciendo por coordenadas de la instalación;
+- la URL de OpenWeather incluirá `mode=xml`;
+- la respuesta recibida desde OpenWeather será XML;
+- nuestra API interpretará ese XML y lo transformará al modelo interno de `weather-records`;
+- el documento persistido seguirá guardándose en MongoDB dentro de la colección `weather-records`;
+- la respuesta pública de nuestra API podrá seguir siendo JSON, ya que el requisito pendiente afecta al mensaje consumido desde la API externa;
+- si OpenWeather devuelve XML inválido, incompleto o no interpretable, el endpoint responderá con error controlado `502`;
+- si falta configuración interna, se mantendrá el comportamiento actual de error `500`;
+- el consumo externo JSON seguirá cubierto por el importador OSM/Overpass.
+
+### Cambios de implementación
+
+- modificar `buildCurrentWeatherUrl` para añadir `mode=xml`;
+- cambiar `fetchCurrentWeatherByCoordinates` para leer la respuesta con `response.text()`;
+- añadir una dependencia de parseo XML para Node.js;
+- implementar una función de parseo y normalización del XML de OpenWeather;
+- adaptar la normalización para obtener:
+  - `temperature`;
+  - `condition`;
+  - `humidity`;
+  - `windspeed`;
+  - `queryDate`;
+- mantener el mismo contrato interno usado por el controlador de instalaciones;
+- conservar los errores actuales de proveedor externo y configuración interna.
+
+### Cambios en OpenAPI y documentación
+
+- revisar la documentación de `GET /installations/{id}/weather` para indicar que los datos se obtienen desde OpenWeather en XML;
+- actualizar el README si se explica el consumo de APIs externas;
+- actualizar el documento de diseño REST si se enumeran los formatos consumidos;
+- actualizar el informe de revisión cuando la iteración esté implementada y probada.
+
+### Tests a implementar o reforzar
+
+- unit tests de construcción de URL para verificar `mode=xml`;
+- unit tests de parseo de XML válido de OpenWeather;
+- unit tests de rechazo de XML sin temperatura o condición;
+- unit tests de rechazo de XML mal formado;
+- tests del servicio para comprobar que se usa `response.text()` en lugar de `response.json()`;
+- tests de integración de `GET /installations/{id}/weather` verificando que una respuesta XML externa se transforma y se guarda en `weather-records`;
+- regresión de caché meteorológica para confirmar que los registros vigentes se siguen reutilizando sin llamar al proveedor.
+
+### Resultado esperado
+
+- la API consume realmente XML desde OpenWeather;
+- la información meteorológica externa se interpreta correctamente;
+- los datos siguen persistiendo en `weather-records`;
+- el requisito obligatorio de consumo XML externo queda cerrado;
+- la suite de tests queda en verde.
 
 ### Estado
 

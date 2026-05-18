@@ -201,7 +201,8 @@ paths:
       description: >
         Devuelve el weather-record más reciente de la instalación si sigue vigente.
         Si no existe o ha caducado, consulta OpenWeather con las coordenadas de la
-        instalación, crea un nuevo registro en weather-records y devuelve ese resultado.
+        instalación solicitando XML mediante mode=xml, transforma esa respuesta externa,
+        crea un nuevo registro en weather-records y devuelve ese resultado en JSON.
       parameters:
         - in: path
           name: id

@@ -5,7 +5,8 @@ const {
     fetchCurrentWeatherByCoordinates,
     getWeatherConfig,
     isWeatherRecordFresh,
-    normalizeOpenWeatherPayload
+    normalizeOpenWeatherXmlPayload,
+    parseOpenWeatherXml
 } = require('../../src/services/openweather.service');
 
 describe('OpenWeather service', () => {
@@ -33,7 +34,7 @@ describe('OpenWeather service', () => {
         });
     });
 
-    test('buildCurrentWeatherUrl construye la URL de Current Weather API 2.5 con métricas y español', () => {
+    test('buildCurrentWeatherUrl construye la URL de Current Weather API 2.5 con métricas, español y XML', () => {
         const url = buildCurrentWeatherUrl({
             lat: 40.3,
             lon: -3.7,
@@ -45,15 +46,35 @@ describe('OpenWeather service', () => {
         expect(url).toContain('lon=-3.7');
         expect(url).toContain('units=metric');
         expect(url).toContain('lang=es');
+        expect(url).toContain('mode=xml');
         expect(url).not.toContain('exclude=');
     });
 
-    test('normalizeOpenWeatherPayload adapta la respuesta Current Weather API 2.5 del proveedor', () => {
+    test('parseOpenWeatherXml interpreta una respuesta XML válida del proveedor', () => {
+        const payload = parseOpenWeatherXml(`
+            <current>
+                <temperature value="21" unit="metric"/>
+                <humidity value="40" unit="%"/>
+                <wind>
+                    <speed value="10" unit="m/s" name="Fresh Breeze"/>
+                </wind>
+                <weather number="800" value="cielo claro" icon="01d"/>
+            </current>
+        `);
+
+        expect(payload.current.temperature.value).toBe(21);
+        expect(payload.current.weather.value).toBe('cielo claro');
+    });
+
+    test('normalizeOpenWeatherXmlPayload adapta la respuesta XML parseada del proveedor', () => {
         const queryDate = new Date('2026-04-22T10:00:00.000Z');
-        const result = normalizeOpenWeatherPayload({
-            main: { temp: 21, humidity: 40 },
-            weather: [{ description: 'cielo claro' }],
-            wind: { speed: 10 }
+        const result = normalizeOpenWeatherXmlPayload({
+            current: {
+                temperature: { value: 21 },
+                humidity: { value: 40 },
+                wind: { speed: { value: 10 } },
+                weather: { value: 'cielo claro' }
+            }
         }, queryDate);
 
         expect(result).toEqual({
@@ -65,11 +86,17 @@ describe('OpenWeather service', () => {
         });
     });
 
-    test('normalizeOpenWeatherPayload rechaza payload sin datos obligatorios', () => {
-        expect(() => normalizeOpenWeatherPayload({
-            main: {},
-            weather: []
+    test('normalizeOpenWeatherXmlPayload rechaza payload sin datos obligatorios', () => {
+        expect(() => normalizeOpenWeatherXmlPayload({
+            current: {
+                temperature: {},
+                weather: {}
+            }
         })).toThrow('meteorológica');
+    });
+
+    test('parseOpenWeatherXml rechaza XML mal formado', () => {
+        expect(() => parseOpenWeatherXml('<current><temperature value="21"></current>')).toThrow('meteorológica');
     });
 
     test('isWeatherRecordFresh devuelve true si queryDate está dentro del TTL', () => {
@@ -85,11 +112,16 @@ describe('OpenWeather service', () => {
     test('fetchCurrentWeatherByCoordinates llama al proveedor y normaliza respuesta', async () => {
         const fetchImpl = jest.fn().mockResolvedValue({
             ok: true,
-            json: jest.fn().mockResolvedValue({
-                main: { temp: 22, humidity: 35 },
-                weather: [{ description: 'soleado' }],
-                wind: { speed: 4 }
-            })
+            text: jest.fn().mockResolvedValue(`
+                <current>
+                    <temperature value="22" unit="metric"/>
+                    <humidity value="35" unit="%"/>
+                    <wind>
+                        <speed value="4" unit="m/s" name="Gentle Breeze"/>
+                    </wind>
+                    <weather number="800" value="soleado" icon="01d"/>
+                </current>
+            `)
         });
 
         const result = await fetchCurrentWeatherByCoordinates({
@@ -100,6 +132,7 @@ describe('OpenWeather service', () => {
         });
 
         expect(fetchImpl).toHaveBeenCalled();
+        expect(fetchImpl.mock.calls[0][0]).toContain('mode=xml');
         expect(result.temperature).toBe(22);
         expect(result.condition).toBe('soleado');
     });

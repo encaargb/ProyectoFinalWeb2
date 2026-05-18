@@ -291,10 +291,12 @@ Funcionamiento:
 - la API busca la instalación en MongoDB;
 - toma sus coordenadas;
 - si hay un registro meteorológico reciente, lo reutiliza;
-- si no hay registro reciente, consulta OpenWeather;
-- transforma la respuesta externa;
+- si no hay registro reciente, consulta OpenWeather solicitando XML con `mode=xml`;
+- interpreta la respuesta XML externa;
 - guarda el resultado en `weather-records`;
 - devuelve el registro al cliente.
+
+El cliente de esta API sigue recibiendo JSON en este endpoint. El XML se consume entre el backend y OpenWeather para cumplir el requisito de consumo externo en XML.
 
 Si OpenWeather falla, la API responde con error controlado y el resto de endpoints siguen funcionando.
 

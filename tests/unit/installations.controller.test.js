@@ -203,11 +203,16 @@ describe('Installations API - Unit Tests', () => {
             const createdWeatherId = new ObjectId();
             global.fetch = jest.fn().mockResolvedValue({
                 ok: true,
-                json: jest.fn().mockResolvedValue({
-                    main: { temp: 22, humidity: 45 },
-                    weather: [{ description: 'soleado' }],
-                    wind: { speed: 5 }
-                })
+                text: jest.fn().mockResolvedValue(`
+                    <current>
+                        <temperature value="22" unit="metric"/>
+                        <humidity value="45" unit="%"/>
+                        <wind>
+                            <speed value="5" unit="m/s" name="Gentle Breeze"/>
+                        </wind>
+                        <weather number="800" value="soleado" icon="01d"/>
+                    </current>
+                `)
             });
 
             mockInstallationsCollection.findOne.mockResolvedValue({
