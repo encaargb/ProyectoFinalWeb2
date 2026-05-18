@@ -1,5 +1,7 @@
 # Diseno de la interfaz REST
 
+**Autores:** Equipo del proyecto: Ines Del Rio Garcia, Encarnacion Teresa Gonzalez Buitrago, Jesus Joana Azuara y Lucia Sorni Scaletti.
+
 Este documento describe el diseno de la interfaz REST del proyecto `sports-facilities-api` e incluye ejemplos de mensajes de peticion y respuesta.
 
 Complementa a los siguientes documentos, que ya estan elaborados dentro del repositorio:

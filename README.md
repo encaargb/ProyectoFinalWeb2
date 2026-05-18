@@ -1,5 +1,7 @@
 # ProyectoFinalWeb2
 
+**Autores:** Equipo del proyecto: Inés Del Río García, Encarnación Teresa González Buitrago, Jesús Joana Azuara y Lucía Sorní Scaletti.
+
 API REST para consultar y gestionar instalaciones deportivas, deportes asociados e histórico meteorológico.
 
 ## Integrantes del grupo
@@ -40,6 +42,8 @@ Para ejecutar el proyecto se necesita:
 - MongoDB Database Tools si se quiere importar o exportar el dataset JSON con `mongoimport` y `mongoexport`.
 - Una API key de OpenWeather para consultar meteorología bajo demanda.
 
+El repositorio incluye `.env.example` como plantilla de configuración. Para una ejecución completa hay que crear un `.env` real a partir de esa plantilla e informar una clave válida de OpenWeather.
+
 ## Instalación
 
 Desde la raíz del repositorio API:
@@ -50,7 +54,11 @@ npm install
 
 ## Configuración
 
-Crear un archivo `.env` en la raíz del proyecto API.
+Crear un archivo `.env` en la raíz del proyecto API. Se puede partir de la plantilla incluida:
+
+```bash
+cp .env.example .env
+```
 
 Ejemplo:
 

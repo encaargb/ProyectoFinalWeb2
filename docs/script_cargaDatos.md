@@ -1,5 +1,7 @@
 # Script de Carga de Datos
 
+**Autores:** Equipo del proyecto: Inés Del Río García, Encarnación Teresa González Buitrago, Jesús Joana Azuara y Lucía Sorní Scaletti.
+
 Este documento describe la forma actualmente implementada para cargar datos en MongoDB desde OpenStreetMap.
 
 La carga se realiza desde el repositorio de la API, `ProyectoFinalWeb2`, mediante un script de consola. No existe un endpoint HTTP público para importar datos.
@@ -36,7 +38,7 @@ Variables de entorno necesarias:
 
 ```env
 MONGODB_URI=mongodb://localhost:27017
-MONGODB_DB_NAME=sports_facilities
+MONGODB_DB_NAME=proyectoFinalWeb
 ```
 
 También se puede indicar la base de datos por parámetro con `--db`, en cuyo caso se usa ese nombre en lugar de `MONGODB_DB_NAME`.
@@ -44,7 +46,7 @@ También se puede indicar la base de datos por parámetro con `--db`, en cuyo ca
 Ejemplo:
 
 ```bash
-npm run import:osm -- --municipality=Getafe --db=sports_facilities_test
+npm run import:osm -- --municipality=Getafe --db=proyectoFinalWeb_test
 ```
 
 ## 3. Parámetros disponibles
@@ -90,7 +92,7 @@ Permite indicar la base de datos MongoDB donde se hará la carga.
 Ejemplo:
 
 ```bash
-npm run import:osm -- --municipality=Getafe --db=sports_facilities_test
+npm run import:osm -- --municipality=Getafe --db=proyectoFinalWeb_test
 ```
 
 Si no se indica, se usa la base definida en `MONGODB_DB_NAME`.
@@ -349,7 +351,7 @@ npm run import:osm -- --municipality=Getafe
 ### Cargar Getafe en una base de pruebas
 
 ```bash
-npm run import:osm -- --municipality=Getafe --db=sports_facilities_test
+npm run import:osm -- --municipality=Getafe --db=proyectoFinalWeb_test
 ```
 
 ### Usar una instancia concreta de Overpass
@@ -371,7 +373,7 @@ Si se quiere empezar desde cero, se puede vaciar manualmente la base de datos de
 Seleccionar la base correcta:
 
 ```javascript
-use sports_facilities
+use proyectoFinalWeb
 ```
 
 Borrar colecciones principales:

@@ -1,5 +1,7 @@
 # Plan de Iteraciones de la API
 
+**Autores:** Equipo del proyecto: Inés Del Río García, Encarnación Teresa González Buitrago, Jesús Joana Azuara y Lucía Sorní Scaletti.
+
 Este documento organiza las siguientes iteraciones funcionales del proyecto a partir de la especificación vigente.
 
 Incluye:

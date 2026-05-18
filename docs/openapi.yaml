@@ -2,6 +2,11 @@ openapi: 3.0.3
 info:
   title: Sports Facilities API
   version: 1.0.0
+  x-authors:
+    - Inés Del Río García
+    - Encarnación Teresa González Buitrago
+    - Jesús Joana Azuara
+    - Lucía Sorní Scaletti
   description: >
     API REST para gestionar instalaciones deportivas, deportes del sistema
     e histórico meteorológico. La API pública documentada incluye

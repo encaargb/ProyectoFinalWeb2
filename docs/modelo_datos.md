@@ -1,5 +1,7 @@
 # Modelo de datos de la base de datos
 
+**Autores:** Equipo del proyecto: Ines Del Rio Garcia, Encarnacion Teresa Gonzalez Buitrago, Jesus Joana Azuara y Lucia Sorni Scaletti.
+
 Este documento describe el modelo de datos actualmente implementado en MongoDB para el proyecto `sports-facilities-api`.
 
 La aplicacion utiliza el driver nativo de MongoDB. Por tanto, no hay esquemas Mongoose activos para las colecciones principales; la estructura se controla desde validadores, repositorios, controladores y servicios.

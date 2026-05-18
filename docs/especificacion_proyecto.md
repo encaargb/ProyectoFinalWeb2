@@ -1,5 +1,7 @@
 # Especificación del Proyecto
 
+**Autores:** Equipo del proyecto: Inés Del Río García, Encarnación Teresa González Buitrago, Jesús Joana Azuara y Lucía Sorní Scaletti.
+
 ## 1. Propósito
 
 `sports-facilities-api` es una API REST para consultar instalaciones deportivas, deportes asociados y registros meteorológicos vinculados a instalaciones concretas.
