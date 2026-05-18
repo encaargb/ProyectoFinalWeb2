@@ -405,15 +405,15 @@ En curso. El importador OSM ya se ha alineado parcialmente con el modelo final.
 
 ## Orden recomendado de ejecución
 
-1. Iteración 7: consumo XML externo con OpenWeather
-2. Iteración 4: búsqueda avanzada en `installations`
-3. Iteración 5: cierre transversal
+1. Iteración 4: búsqueda avanzada en `installations`
+2. Iteración 5: cierre transversal
 
 ## Motivo de este orden actual
 
 - `sports`, `weather-records` y meteorología bajo demanda ya están operativos.
 - la recarga de datos ya tiene limpieza de instalaciones obsoletas y weather huérfano.
-- el consumo XML externo es un requisito obligatorio pendiente detectado en la revisión final.
+- el consumo XML externo ya se ha cerrado mediante OpenWeather con `mode=xml`.
+- la coleccion `installations` ya supera los 1000 documentos tras la nueva importacion y exportacion del dataset.
 - la búsqueda avanzada mejora directamente la experiencia del cliente.
 - el cierre transversal debe hacerse cuando estén estables los recursos principales.
 
@@ -513,6 +513,37 @@ La integración meteorológica dejará de solicitar JSON a OpenWeather y pasará
 - los datos siguen persistiendo en `weather-records`;
 - el requisito obligatorio de consumo XML externo queda cerrado;
 - la suite de tests queda en verde.
+
+### Estado
+
+Completada.
+
+---
+
+## Iteración 8. Ampliación del dataset de instalaciones
+
+### Objetivo
+
+Cerrar el requisito de disponer de al menos una colección con 1000 documentos o más.
+
+### Alcance
+
+- realizar una nueva importación de instalaciones deportivas desde OpenStreetMap/Overpass;
+- verificar el conteo real en MongoDB;
+- regenerar los datasets JSON incluidos en el repositorio;
+- actualizar la documentación con los nuevos conteos.
+
+### Resultado de la carga
+
+- `installations`: 1583 documentos;
+- `sports`: 43 documentos;
+- `weather-records`: 4 documentos.
+
+### Resultado esperado
+
+- `installations` queda como colección grande del proyecto;
+- `GET /installations` cumple los requisitos de paginación y filtrado sobre la colección grande;
+- el dataset del repositorio permite reconstruir la base de datos con más de 1000 instalaciones.
 
 ### Estado
 

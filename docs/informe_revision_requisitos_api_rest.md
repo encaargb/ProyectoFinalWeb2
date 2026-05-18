@@ -4,11 +4,11 @@
 **Autores del documento:** Equipo del proyecto: Ines Del Rio Garcia, Encarnacion Teresa Gonzalez Buitrago, Jesus Joana Azuara y Lucia Sorni Scaletti.  
 **Responsable de la revision:** Jesus Joana Azuara  
 **Fecha de revision:** 18/05/2026  
-**Version revisada:** ultimo commit entregado  
-**Commit revisado:** `1497af8023f637dbe001fbf0f233eca994ea24bc`  
-**Commit corto:** `1497af8`  
-**Mensaje del commit:** `Documentación API REST completada para la entrega final`  
-**Fecha del commit:** `2026-05-17T19:08:57+02:00`
+**Version revisada:** version final tras iteraciones de cierre  
+**Commit base revisado:** `1497af8023f637dbe001fbf0f233eca994ea24bc`  
+**Commit base corto:** `1497af8`  
+**Mensaje del commit base:** `Documentación API REST completada para la entrega final`  
+**Fecha del commit base:** `2026-05-17T19:08:57+02:00`
 
 ## 1. Objetivo del informe
 
@@ -20,23 +20,21 @@ La revision se ha hecho sobre el repositorio `ProyectoFinalWeb2`, revisando el c
 
 La API REST esta implementada en Node.js con Express, utiliza MongoDB como base de datos y expone recursos REST para instalaciones deportivas, deportes y registros meteorologicos.
 
-La version revisada cumple la mayoria de los requisitos estructurales del proyecto: tecnologia Node.js, uso de MongoDB, existencia de tres recursos relacionados, persistencia en colecciones separadas, mensajes JSON, mensaje XML con schema asociado, carga de datos mediante script npm y dataset incluido en el repositorio.
+La version revisada cumple los requisitos estructurales del proyecto: tecnologia Node.js, uso de MongoDB, existencia de tres recursos relacionados, persistencia en colecciones separadas, consumo externo JSON y XML, mensajes REST JSON y XML con schema asociado, carga de datos mediante script npm y dataset incluido en el repositorio.
 
-Tras la iteracion de consumo XML externo, queda un punto pendiente respecto al enunciado que debe resolverse antes de considerar la entrega completamente cerrada:
-
-1. Ninguna coleccion incluida en el dataset del repositorio alcanza los 1000 documentos.
+Tras la iteracion de consumo XML externo y la nueva importacion de instalaciones, no quedan puntos obligatorios pendientes detectados en esta revision.
 
 El requisito de CRUD sobre la base de datos se considera cumplido, ya que la API ofrece operaciones CRUD publicas sobre la base de datos a traves de los recursos `installations` y `sports`. El recurso `weather-records` funciona como historico meteorologico generado por la propia API y consultable desde endpoints publicos.
 
 ## 3. Version revisada del software
 
-La revision corresponde al ultimo commit entregado:
+La revision parte del ultimo commit entregado:
 
 ```text
 1497af8023f637dbe001fbf0f233eca994ea24bc
 ```
 
-El arbol de trabajo estaba limpio en el momento de la revision, por lo que el analisis se refiere a esa version concreta del software.
+Tras ese commit se han incorporado las iteraciones de cierre documentadas en este informe: consumo XML externo mediante OpenWeather y ampliacion/exportacion del dataset hasta superar los 1000 documentos en `installations`.
 
 ## 4. Revision requisito por requisito
 
@@ -57,10 +55,10 @@ El arbol de trabajo estaba limpio en el momento de la revision, por lo que el an
 | Los datos de cada recurso tienen que guardarse en una coleccion. | Cumple | Existen colecciones MongoDB para `installations`, `sports` y `weather-records`. |
 | La base de datos tiene que ser MongoDB. | Cumple | El proyecto usa el driver oficial de MongoDB y colecciones MongoDB. |
 | Los datos se tienen que poder cargar automaticamente desde un script npm. | Cumple | Existe el script `npm run import:osm`, que carga datos desde OpenStreetMap/Overpass. |
-| Una de las colecciones tiene que contener al menos 1000 documentos. | Pendiente | El dataset incluido contiene 836 instalaciones, 33 deportes y 3 registros meteorologicos. Se cumplira realizando cargas adicionales de instalaciones deportivas y regenerando el dataset. |
+| Una de las colecciones tiene que contener al menos 1000 documentos. | Cumple | El dataset incluido contiene 1583 instalaciones, 43 deportes y 4 registros meteorologicos. `installations` es la coleccion grande. |
 | Generar un JSON para importar estos datos. | Cumple | El repositorio incluye `data/installations.json`, `data/sports.json` y `data/weather-records.json`. |
-| Al menos una ruta tiene que ofrecer paginacion para realizar busquedas en la coleccion grande. | Cumple tecnicamente / pendiente de carga | `GET /installations` tiene paginacion con `page` y `limit`. Falta completar la carga de datos para que `installations` sea la coleccion grande con mas de 1000 documentos. |
-| Al menos una ruta tiene que permitir filtrar datos para realizar busquedas en la coleccion grande. | Cumple tecnicamente / pendiente de carga | `GET /installations` permite filtrar por `name`, `city`, `type` y `sport`. Falta completar la carga de datos para que `installations` sea la coleccion grande con mas de 1000 documentos. |
+| Al menos una ruta tiene que ofrecer paginacion para realizar busquedas en la coleccion grande. | Cumple | `GET /installations` tiene paginacion con `page` y `limit`, y `installations` contiene 1583 documentos. |
+| Al menos una ruta tiene que permitir filtrar datos para realizar busquedas en la coleccion grande. | Cumple | `GET /installations` permite filtrar por `name`, `city`, `type` y `sport`, y `installations` contiene 1583 documentos. |
 | Tiene que haber un dataset en el repositorio para inicializar las colecciones. | Cumple | El dataset esta en la carpeta `data/`. |
 
 ## 5. Evidencias tecnicas revisadas
@@ -242,12 +240,12 @@ data/weather-records.json
 Conteo verificado en la version revisada:
 
 ```text
-installations: 836
-sports: 33
-weather-records: 3
+installations: 1583
+sports: 43
+weather-records: 4
 ```
 
-Por tanto, existe dataset para inicializar colecciones. El requisito de tener una coleccion con al menos 1000 documentos queda pendiente hasta realizar cargas adicionales de instalaciones deportivas y regenerar el dataset.
+Por tanto, existe dataset para inicializar colecciones y la coleccion `installations` cumple el requisito de contener al menos 1000 documentos.
 
 ### 5.9. Paginacion y filtros
 
@@ -263,7 +261,7 @@ Tambien permite filtros:
 GET /installations?city=Getafe&sport=tennis&type=pitch
 ```
 
-El requisito funcional de paginacion y filtrado esta implementado, pero queda condicionado por el incumplimiento del numero minimo de documentos en la coleccion grande.
+El requisito funcional de paginacion y filtrado queda cumplido sobre la coleccion grande `installations`, que contiene 1583 documentos.
 
 ## 6. Resultado de tests
 
@@ -274,7 +272,7 @@ Test Suites: 17 passed, 17 total
 Tests: 154 passed, 154 total
 ```
 
-Esto indica que la version actual es estable respecto a los tests existentes, aunque los tests no cubren automaticamente todos los requisitos del enunciado, especialmente el consumo XML externo y la verificacion del minimo de 1000 documentos tras las cargas adicionales.
+Esto indica que la version actual es estable respecto a los tests existentes. Ademas, se ha verificado el minimo de 1000 documentos mediante conteo directo de la coleccion `installations` y del dataset exportado.
 
 ## 7. Revision de requisitos opcionales
 
@@ -426,7 +424,7 @@ scripts/import-osm.js
 
 | Requisito final | Estado | Observaciones |
 |---|---|---|
-| Revisar que se responde a lo que se pide. | Cumple con pendientes identificados | La API responde a la mayor parte de requisitos. Quedan pendientes el consumo XML externo y completar mas de 1000 documentos en una coleccion. |
+| Revisar que se responde a lo que se pide. | Cumple | La API responde a los requisitos obligatorios revisados. El consumo XML externo esta implementado y `installations` supera los 1000 documentos. |
 | Revisar que el codigo funciona y no hay errores obvios. | Cumple | Backend y cliente ejecutan sus tests correctamente. |
 | El codigo debe funcionar out-of-the-box. | Cumple condicionado | El proyecto puede instalarse y ejecutarse siguiendo el README. Requiere Node.js, MongoDB, `.env` y API key de OpenWeather para la funcionalidad meteorologica completa. Estos requisitos estan documentados. |
 | Revisar que el proyecto funciona sin archivos adicionales o que se indica si hace falta algo mas. | Cumple | Se incluye `.env.example` y el README indica las variables necesarias, MongoDB, API key externa y herramientas de importacion. |
@@ -454,11 +452,9 @@ Como mejora de claridad, el README se ha actualizado para indicar que el reposit
 
 La documentacion cumple los requisitos aplicables. El proyecto queda documentado para instalar dependencias, configurar entorno, cargar datos, arrancar la API, consultar Swagger/OpenAPI, entender el modelo de datos y ejecutar tests.
 
-El unico matiz importante es que la documentacion final debera actualizarse de nuevo cuando se complete el punto pendiente de datos:
+El dataset incluido se ha actualizado tras la nueva importacion y deja `installations` como coleccion grande con 1583 documentos.
 
-- ampliacion del dataset hasta superar los 1000 documentos en `installations`.
-
-## 9. Puntos pendientes detectados
+## 9. Puntos pendientes cerrados
 
 ### 9.1. Consumo XML desde API externa implementado
 
@@ -485,7 +481,7 @@ Se han anadido pruebas para verificar:
 - rechazo de XML mal formado o incompleto;
 - persistencia del resultado en `weather-records`.
 
-### 9.2. Falta completar una coleccion con al menos 1000 documentos
+### 9.2. Coleccion con al menos 1000 documentos completada
 
 El enunciado exige:
 
@@ -493,21 +489,17 @@ El enunciado exige:
 Una de las colecciones tiene que contener al menos 1000 documentos.
 ```
 
-El dataset incluido no alcanza esa cantidad:
+El dataset incluido ya alcanza esa cantidad:
 
 ```text
-installations: 836
-sports: 33
-weather-records: 3
+installations: 1583
+sports: 43
+weather-records: 4
 ```
 
-Para cumplir este requisito se realizaran cargas adicionales de instalaciones deportivas mediante el script:
+La coleccion grande es `installations`. Se ha actualizado el dataset del repositorio con una nueva exportacion desde la base local `proyectoFinalWeb`.
 
-```bash
-npm run import:osm -- --municipality=<Municipio>
-```
-
-Despues se verificara que la coleccion `installations` supera los 1000 documentos y se regenerara el dataset `data/installations.json`.
+Con esto, la paginacion y los filtros de `GET /installations` operan sobre una coleccion que supera el minimo exigido.
 
 ### 9.3. CRUD sobre la base de datos
 
@@ -517,22 +509,14 @@ Este requisito se considera cumplido. La API ofrece operaciones CRUD sobre la ba
 
 ## 10. Recomendaciones para cerrar el cumplimiento
 
-1. **Ampliar la coleccion `installations` a mas de 1000 documentos.**
-   - Ejecutar el script de carga para uno o varios municipios adicionales.
-   - Verificar que `installations` supera los 1000 documentos.
-   - Regenerar `data/installations.json`.
-   - Actualizar README y documentacion con el nuevo conteo.
+No quedan recomendaciones obligatorias pendientes para cerrar el cumplimiento del enunciado revisado.
 
-2. **Actualizar la documentacion final.**
-   - Indicar la coleccion que supera los 1000 documentos.
-   - Mantener sincronizados README, OpenAPI y documentos de diseno.
+Como mejora opcional, se puede seguir ampliando el cliente desacoplado para cubrir tambien rutas o variantes menos habituales, como `GET /weather-records/{id}` o la variante XML de `GET /installations/{id}`.
 
 ## 11. Conclusion
 
-Como conclusion de la revision, considero que la version actual del software esta bastante avanzada y cumple la estructura principal esperada para el proyecto: API REST en Node.js, MongoDB, tres recursos relacionados, JSON, XML de salida con schema, scripts de carga y dataset.
+Como conclusion de la revision, considero que la version actual del software cumple los requisitos obligatorios esperados para el proyecto: API REST en Node.js, MongoDB, tres recursos relacionados, consumo externo JSON y XML, JSON como formato principal, XML REST con schema, scripts de carga y dataset incluido.
 
-No obstante, para considerar que cumple completamente el enunciado, queda un punto pendiente:
+La coleccion `installations` contiene 1583 documentos, por lo que cubre el requisito de coleccion grande para paginacion y filtrado.
 
-- realizar cargas adicionales para que la coleccion `installations` supere los 1000 documentos y regenerar el dataset.
-
-Hasta que ese punto no se resuelva, la version actual debe considerarse funcional y estable, con el CRUD REST sobre la base de datos y el consumo XML externo cumplidos, pero todavia pendiente de cerrar completamente respecto al volumen minimo de datos.
+La practica queda cerrada respecto a los requisitos obligatorios revisados.

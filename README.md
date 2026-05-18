@@ -114,9 +114,11 @@ data/weather-records.json
 
 Contenido actual:
 
-- `installations.json`: 836 instalaciones deportivas.
-- `sports.json`: 33 deportes.
-- `weather-records.json`: 3 registros meteorológicos.
+- `installations.json`: 1583 instalaciones deportivas.
+- `sports.json`: 43 deportes.
+- `weather-records.json`: 4 registros meteorológicos.
+
+La colección `installations` supera los 1000 documentos, por lo que cubre el requisito de colección grande para búsquedas paginadas y filtradas.
 
 Para importar estos datos en MongoDB:
 

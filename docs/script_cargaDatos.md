@@ -406,9 +406,11 @@ data/weather-records.json
 
 Contenido exportado:
 
-- `installations.json`: 836 instalaciones deportivas.
-- `sports.json`: 33 deportes del catálogo.
-- `weather-records.json`: 3 registros meteorológicos.
+- `installations.json`: 1583 instalaciones deportivas.
+- `sports.json`: 43 deportes del catálogo.
+- `weather-records.json`: 4 registros meteorológicos.
+
+La exportación actual cumple el requisito de disponer de una colección con al menos 1000 documentos, usando `installations` como colección grande.
 
 Este dataset permite inicializar MongoDB sin depender en ese momento de OpenStreetMap ni de OpenWeather. Es una captura de los datos ya cargados previamente en la base local.
 
