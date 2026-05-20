@@ -49,6 +49,38 @@ Ejemplo:
 npm run import:osm -- --municipality=Getafe --db=proyectoFinalWeb_test
 ```
 
+Antes de ejecutar la carga por primera vez, preparar MongoDB con esta secuencia:
+
+1. Abrir una consola de MongoDB:
+
+```bash
+mongosh
+```
+
+2. Seleccionar la base de datos donde se hará la carga. Si todavía no existe, MongoDB la creará cuando se cree la primera colección:
+
+```javascript
+use proyectoFinalWeb
+```
+
+3. Crear las colecciones necesarias dentro de esa base de datos:
+
+```javascript
+for (const collectionName of ["installations", "sports", "weather-records"]) {
+  if (!db.getCollectionNames().includes(collectionName)) {
+    db.createCollection(collectionName)
+  }
+}
+```
+
+4. Comprobar que se han creado correctamente:
+
+```javascript
+show collections
+```
+
+Si se usa otra base con `--db`, sustituir `proyectoFinalWeb` por el nombre indicado en el paso `use`.
+
 ## 3. Parámetros disponibles
 
 ### `--municipality`

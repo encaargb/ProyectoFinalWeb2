@@ -98,6 +98,38 @@ La base de datos configurada para el proyecto es:
 proyectoFinalWeb
 ```
 
+Antes de cargar datos desde OpenStreetMap o de consultar meteorología con OpenWeather, preparar MongoDB con esta secuencia:
+
+1. Abrir una consola de MongoDB:
+
+```bash
+mongosh
+```
+
+2. Seleccionar la base de datos del proyecto. Si todavía no existe, MongoDB la creará cuando se cree la primera colección:
+
+```javascript
+use proyectoFinalWeb
+```
+
+3. Crear las colecciones necesarias dentro de esa base de datos:
+
+```javascript
+for (const collectionName of ["installations", "sports", "weather-records"]) {
+  if (!db.getCollectionNames().includes(collectionName)) {
+    db.createCollection(collectionName)
+  }
+}
+```
+
+4. Comprobar que se han creado correctamente:
+
+```javascript
+show collections
+```
+
+Después de estos pasos ya se puede importar el dataset JSON incluido o ejecutar el script de carga desde OpenStreetMap. La colección `weather-records` también se usará cuando se consulte el endpoint de meteorología de una instalación con OpenWeather.
+
 ## Carga de datos
 
 El proyecto tiene dos formas de inicializar datos en MongoDB.
